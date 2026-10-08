@@ -24,6 +24,7 @@ services:
       retries: 12
 
   api:
+    image: ${CI_COMPOSE_PROJECT:-pettly-ci}-api:latest
     restart: 'no'
     environment:
       DB_HOST: global_postgres
@@ -36,7 +37,9 @@ services:
         condition: service_healthy
 
   web:
+    image: ${CI_COMPOSE_PROJECT:-pettly-ci}-web:latest
     restart: 'no'
 
   admin:
+    image: ${CI_COMPOSE_PROJECT:-pettly-ci}-admin:latest
     restart: 'no'

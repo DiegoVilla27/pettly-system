@@ -60,7 +60,7 @@ node scripts/ci/smoke-docker.mjs
 pnpm docker:ci:down
 ```
 
-El Compose de desarrollo conserva su red externa compartida. CI utiliza cache de BuildKit y publica diagnósticos Docker cuando falla.
+El Compose de desarrollo conserva su red externa compartida. CI utiliza cachés de BuildKit independientes para API, web y admin, evitando que una imagen sobrescriba la caché de otra. Publica diagnósticos Docker cuando falla.
 
 ## Configuración externa opcional
 
