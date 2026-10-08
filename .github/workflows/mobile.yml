@@ -54,6 +54,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            apps/mobile/android/**/*.gradle.kts
+            apps/mobile/android/gradle/wrapper/gradle-wrapper.properties
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
