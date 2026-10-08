@@ -1,9 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { classifyChanges, checkBranchPolicy } from './detect-changes.mjs';
 import { evaluateGate } from './quality-gate.mjs';
 
 const all = { api: true, web: true, admin: true, mobile: true, docker: true };
+
+test('jobs que solo usan Node desactivan la caché automática de pnpm', () => {
+  for (const file of ['ci.yml', 'docker.yml']) {
+    const workflow = readFileSync(
+      new URL(`../../.github/workflows/${file}`, import.meta.url),
+      'utf8',
+    );
+    const steps = workflow.match(
+      /- uses: actions\/setup-node@v5\n[\s\S]*?(?=\n {6}-|$)/g,
+    );
+    assert.ok(steps?.length, file);
+    for (const step of steps)
+      assert.match(step, /package-manager-cache: false/, file);
+  }
+});
 
 test('cambios compartidos activan todas las aplicaciones y Docker', () => {
   for (const file of [

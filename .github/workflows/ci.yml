@@ -43,6 +43,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - name: Detect changed applications
         id: detect
         env:
@@ -136,6 +137,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - name: Evaluate all required applications
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
@@ -152,6 +154,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - name: Publish one consolidated report
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
@@ -168,6 +171,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - name: Send consolidated report
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
