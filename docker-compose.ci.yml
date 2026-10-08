@@ -1,0 +1,42 @@
+# Infraestructura temporal para CI. No usa el PostgreSQL compartido del equipo.
+name: ${CI_COMPOSE_PROJECT:-pettly-ci}
+
+networks:
+  shared-network:
+    external: false
+    name: ${CI_NETWORK_NAME:-pettly-ci-network}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: 'no'
+    environment:
+      POSTGRES_DB: pettly_ci
+      POSTGRES_USER: pettly_ci
+      POSTGRES_PASSWORD: ci-only-password
+    networks:
+      shared-network:
+        aliases: [global_postgres]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pettly_ci -d pettly_ci']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    restart: 'no'
+    environment:
+      DB_HOST: global_postgres
+      DB_PORT: 5432
+      DB_NAME: pettly_ci
+      DB_USER: pettly_ci
+      DB_PASSWORD: ci-only-password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    restart: 'no'
+
+  admin:
+    restart: 'no'

@@ -118,3 +118,9 @@ pnpm docker:up
 La API, la web y el backoffice usan `shared-network`; PostgreSQL corresponde al servicio externo `global_postgres`. La app Flutter se mantiene fuera de Docker.
 
 Consulta [docs/development.md](docs/development.md) para hooks, puertos y configuración de base de datos.
+
+## GitHub Actions
+
+CI por aplicación, detección de cambios compartidos, artefactos de compilación, comprobaciones Docker con PostgreSQL temporal y validación final obligatoria.
+
+Consulta [docs/ci.md](docs/ci.md) para ejecutar el pipeline, activar SonarCloud/Discord y proteger las ramas.

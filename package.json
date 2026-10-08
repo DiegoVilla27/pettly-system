@@ -24,7 +24,11 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:build": "docker compose build",
-    "docker:config": "docker compose config --quiet"
+    "docker:config": "docker compose config --quiet",
+    "test:ci": "node --test scripts/ci/*.test.mjs",
+    "docker:ci:config": "docker compose -f docker-compose.yml -f docker-compose.ci.yml config --quiet",
+    "docker:ci:up": "docker compose -f docker-compose.yml -f docker-compose.ci.yml up --build -d --wait --wait-timeout 180",
+    "docker:ci:down": "docker compose -f docker-compose.yml -f docker-compose.ci.yml down --volumes --remove-orphans"
   },
   "private": true,
   "devDependencies": {
