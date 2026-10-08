@@ -8,3 +8,8 @@
 
 /apps/mobile
 .pnpm-store/
+
+.husky/_/
+**/.next
+**/dist
+apps/web/next-env.d.ts

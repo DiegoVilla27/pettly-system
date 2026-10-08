@@ -105,3 +105,16 @@ pnpm build:mobile:ios
 ```
 
 Más detalles en [apps/mobile/README.md](apps/mobile/README.md).
+
+## Commits y contenedores
+
+Husky valida Conventional Commits, revisa los archivos del commit y reconstruye los contenedores antes del push.
+
+```sh
+cp .env.example .env
+pnpm docker:up
+```
+
+La API, la web y el backoffice usan `shared-network`; PostgreSQL corresponde al servicio externo `global_postgres`. La app Flutter se mantiene fuera de Docker.
+
+Consulta [docs/development.md](docs/development.md) para hooks, puertos y configuración de base de datos.

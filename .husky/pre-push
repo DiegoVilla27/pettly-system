@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+set -eu
+
+if ! docker info >/dev/null 2>&1; then
+  echo "[pre-push] Docker no está en ejecución. Inicia Docker Desktop."
+  exit 1
+fi
+if ! docker network inspect shared-network >/dev/null 2>&1; then
+  echo "[pre-push] Falta la red externa shared-network. Consulta docs/development.md."
+  exit 1
+fi
+if [ ! -f .env ]; then
+  echo "[pre-push] Falta .env. Copia .env.example y configura PostgreSQL compartido."
+  exit 1
+fi
+
+echo "[pre-push] Construyendo y actualizando los contenedores de Pettly..."
+if ! pnpm docker:up; then
+  echo "[pre-push] Falló la construcción, el arranque o la salud de los contenedores. Push cancelado."
+  exit 1
+fi
+echo "[pre-push] Contenedores de Pettly listos."

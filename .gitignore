@@ -55,3 +55,9 @@ out
 
 .angular
 .pnpm-store/
+
+# Entorno local y archivos generados por Husky
+.env
+.env.*
+!.env.example
+.husky/_/
