@@ -1,0 +1,61 @@
+{
+  "name": "mobile",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/mobile/lib",
+  "targets": {
+    "pub-get": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter pub get",
+        "cwd": "apps/mobile"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter run",
+        "cwd": "apps/mobile"
+      },
+      "continuous": true
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter analyze",
+        "cwd": "apps/mobile"
+      },
+      "dependsOn": [
+        "pub-get"
+      ]
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dart format lib",
+        "cwd": "apps/mobile"
+      }
+    },
+    "format-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dart format --output=none --set-exit-if-changed lib",
+        "cwd": "apps/mobile"
+      }
+    },
+    "build-android": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build apk --debug",
+        "cwd": "apps/mobile"
+      }
+    },
+    "build-ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ios --simulator",
+        "cwd": "apps/mobile"
+      }
+    }
+  }
+}
