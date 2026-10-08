@@ -1,5 +1,10 @@
 .git
 .husky
+.github
+docs
+README.md
+scripts/ci
+docker-compose*.yml
 node_modules
 **/node_modules
 .pnpm-store

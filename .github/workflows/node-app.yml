@@ -1,0 +1,183 @@
+name: Reusable Node application CI
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+      artifact_path:
+        required: true
+        type: string
+      sonar_project_key:
+        default: ''
+        type: string
+    secrets:
+      SONAR_TOKEN:
+        required: false
+    outputs:
+      unit_tests:
+        value: ${{ jobs.unit-tests.outputs.state }}
+      integration_tests:
+        value: ${{ jobs.integration-tests.outputs.state }}
+      sonar:
+        value: ${{ jobs.quality-gate.outputs.sonar }}
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: '0'
+  NX_DAEMON: 'false'
+  NX_ISOLATE_PLUGINS: 'false'
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  static-checks:
+    name: Format, lint and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-node-pnpm
+      - name: Check application format
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: pnpm exec prettier --check "apps/$PROJECT"
+      - name: Lint and typecheck
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: pnpm exec nx run-many -t lint typecheck -p "$PROJECT"
+
+  unit-tests:
+    name: Unit tests
+    needs: static-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      state: ${{ steps.tests.outputs.state }}
+      coverage: ${{ steps.coverage.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-node-pnpm
+      - name: Run available unit suite
+        id: tests
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: node scripts/ci/run-tests.mjs "$PROJECT" unit
+      - uses: actions/upload-artifact@v4
+        id: coverage
+        with:
+          name: ${{ inputs.project }}-coverage
+          path: apps/${{ inputs.project }}/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  integration-tests:
+    name: Integration tests
+    needs: static-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      state: ${{ steps.tests.outputs.state }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-node-pnpm
+      - name: Run available integration suite
+        id: tests
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: node scripts/ci/run-tests.mjs "$PROJECT" integration
+
+  build:
+    name: Production build
+    needs: static-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-node-pnpm
+      - name: Build application
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: pnpm exec nx build "$PROJECT"
+      - name: Complete standalone web artifact
+        if: inputs.project == 'web'
+        run: |
+          cp -R apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+          cp -R apps/web/public apps/web/.next/standalone/apps/web/public
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.project }}-build
+          path: ${{ inputs.artifact_path }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  sonar:
+    name: SonarCloud quality gate
+    needs: unit-tests
+    if: inputs.sonar_project_key != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Check configured Sonar token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo 'SonarCloud está activado pero falta el secreto SONAR_TOKEN.'
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        if: needs.unit-tests.outputs.coverage != ''
+        with:
+          pattern: ${{ inputs.project }}-coverage
+          path: apps/${{ inputs.project }}/coverage
+          merge-multiple: true
+      - uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: apps/${{ inputs.project }}
+          args: >-
+            -Dsonar.projectKey=${{ inputs.sonar_project_key }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.sources=src
+            -Dsonar.exclusions=**/*.spec.*,**/*.test.*
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+  quality-gate:
+    name: Application quality gate
+    needs: [static-checks, unit-tests, integration-tests, build, sonar]
+    outputs:
+      sonar: ${{ steps.evaluate.outputs.sonar }}
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate required stages
+        id: evaluate
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          SONAR_KEY: ${{ inputs.sonar_project_key }}
+          TRUSTED_EVENT: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          node --input-type=module <<'NODE'
+          const needs = JSON.parse(process.env.RESULTS);
+          const { appendFileSync } = await import('node:fs');
+          appendFileSync(process.env.GITHUB_OUTPUT, `sonar=${needs.sonar.result}\n`);
+          const required = ['static-checks', 'unit-tests', 'integration-tests', 'build'];
+          if (process.env.SONAR_KEY && process.env.TRUSTED_EVENT === 'true') required.push('sonar');
+          const failed = required.filter(name => needs[name]?.result !== 'success');
+          for (const name of ['unit-tests', 'integration-tests']) {
+            if (!['success', 'not_configured'].includes(needs[name]?.outputs?.state)) failed.push(`${name} output`);
+          }
+          console.log(JSON.stringify(needs, null, 2));
+          if (failed.length) { console.error(failed.join(', ')); process.exit(1); }
+          NODE

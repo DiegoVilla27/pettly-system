@@ -1,38 +1,184 @@
-name: CI
+name: Pettly CI
 
 on:
   push:
     branches: [main, dev]
   pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: Validate all applications, even without detected changes
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: pettly-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  HUSKY: '0'
+  NX_DAEMON: 'false'
+  NX_ISOLATE_PLUGINS: 'false'
+  NEXT_TELEMETRY_DISABLED: '1'
+
 jobs:
-  check:
+  changes:
+    name: Changes and branch policy
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      api: ${{ steps.detect.outputs.api }}
+      web: ${{ steps.detect.outputs.web }}
+      admin: ${{ steps.detect.outputs.admin }}
+      mobile: ${{ steps.detect.outputs.mobile }}
+      docker: ${{ steps.detect.outputs.docker }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Validate commit messages
+          package-manager-cache: false
+      - name: Detect changed applications
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORCE_ALL: ${{ inputs.force_all }}
+        run: node scripts/ci/detect-changes.mjs
+
+  repository:
+    name: Repository checks
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node-pnpm
+      - run: pnpm format:check
+      - run: pnpm test:ci
+      - run: pnpm docker:ci:config
+      - name: Conventional Commits
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA"
-      - run: pnpm docker:config
-      - run: pnpm format:check
-      - uses: subosito/flutter-action@v2
+      - name: Validate Actions syntax
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.11 -color
+
+  api:
+    name: API (NestJS)
+    needs: [changes, repository]
+    if: needs.changes.outputs.api == 'true'
+    uses: ./.github/workflows/node-app.yml
+    with:
+      project: api
+      artifact_path: apps/api/dist/
+      sonar_project_key: ${{ vars.SONAR_API_PROJECT_KEY }}
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  web:
+    name: Web (Next.js)
+    needs: [changes, repository]
+    if: needs.changes.outputs.web == 'true'
+    uses: ./.github/workflows/node-app.yml
+    with:
+      project: web
+      artifact_path: apps/web/.next/standalone/
+      sonar_project_key: ${{ vars.SONAR_WEB_PROJECT_KEY }}
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  admin:
+    name: Backoffice (Angular)
+    needs: [changes, repository]
+    if: needs.changes.outputs.admin == 'true'
+    uses: ./.github/workflows/node-app.yml
+    with:
+      project: admin
+      artifact_path: dist/apps/admin/browser/
+      sonar_project_key: ${{ vars.SONAR_ADMIN_PROJECT_KEY }}
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  mobile:
+    name: Mobile (Flutter)
+    needs: [changes, repository]
+    if: needs.changes.outputs.mobile == 'true'
+    uses: ./.github/workflows/mobile.yml
+
+  docker:
+    name: Docker and application smoke checks
+    needs: [changes, repository]
+    if: needs.changes.outputs.docker == 'true'
+    uses: ./.github/workflows/docker.yml
+
+  quality-gate:
+    name: Pettly CI Quality Gate
+    needs: [changes, repository, api, web, admin, mobile, docker]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          flutter-version: '3.41.4'
-          channel: stable
-          cache: true
-      - run: pnpm check
-      - run: pnpm nx run mobile:format-check
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Evaluate all required applications
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: node scripts/ci/quality-gate.mjs
+
+  summary:
+    name: CI summary
+    needs: [changes, repository, api, web, admin, mobile, docker, quality-gate]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Publish one consolidated report
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: node scripts/ci/summary.mjs
+
+  notify:
+    name: Discord report
+    needs: [changes, repository, api, web, admin, mobile, docker, quality-gate]
+    if: always() && github.event_name != 'pull_request' && vars.CI_DISCORD_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Send consolidated report
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo 'CI_DISCORD_ENABLED está activado pero falta DISCORD_WEBHOOK.'
+            exit 1
+          fi
+          node scripts/ci/summary.mjs
