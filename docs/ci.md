@@ -33,7 +33,7 @@ El workflow reutilizable `node-app.yml` conserva la secuencia de task-manager:
 
 La preparación de pnpm/Node es una acción local compartida. Se usa pnpm fijado en `package.json` y el lockfile raíz. `HUSKY=0` desactiva hooks durante CI, sin desactivar los scripts nativos de dependencias.
 
-Actualmente no hay suites de aplicación. Los jobs indican `not_configured`: no se presenta como pruebas ejecutadas. Al añadir un target Nx `test:unit` (o `test`) y `test:integration`, el workflow los ejecutará y cualquier fallo bloqueará la validación. Las pruebas unitarias preceden a SonarCloud; si producen un artefacto de cobertura en `apps/<aplicación>/coverage`, se reutiliza.
+La API tiene targets `test` y `test:integration`: unitarias del núcleo/adaptadores de seguridad e integración HTTP contra PostgreSQL, Redis y Mailpit temporales. Un fallo bloquea la validación. Las aplicaciones sin suite indican `not_configured`, sin presentarse como pruebas ejecutadas. Las pruebas unitarias preceden a SonarCloud; si producen un artefacto de cobertura en `apps/<aplicación>/coverage`, se reutiliza.
 
 Los artefactos de compilación se conservan 7 días. El bundle standalone de Next.js incluye los recursos estáticos y `public`. Los artefactos de API y Angular corresponden a sus compilaciones; las imágenes Docker son la comprobación del empaquetado completo de producción.
 
@@ -45,9 +45,9 @@ Flutter permanece fuera de Docker.
 
 ## Docker aislado
 
-`docker-compose.ci.yml` es un override específico de CI. Crea una red dedicada y un PostgreSQL temporal con credenciales exclusivas de prueba; no accede al `global_postgres` compartido del equipo. Los contenedores se eliminan junto a sus volúmenes y red al finalizar, incluso si una comprobación falla.
+`docker-compose.ci.yml` es un override específico de CI. Crea una red dedicada y PostgreSQL, Redis y Mailpit temporales con configuración exclusiva de prueba; no accede al `global_postgres` compartido del equipo. Los contenedores se eliminan junto a sus volúmenes y red al finalizar, incluso si una comprobación falla.
 
-La prueba comprueba salud, respuesta de la API, HTML Next.js, carga de bundles Angular, fallback SPA y acceso de red al PostgreSQL temporal. **No es una suite E2E de negocio ni valida persistencia:** esas funciones todavía no existen.
+La prueba comprueba salud, respuesta de la API, HTML Next.js, carga de bundles Angular, fallback SPA y acceso de red al PostgreSQL temporal. También comprueba OpenAPI y un login inválido que ejercita los adaptadores de PostgreSQL/Redis. La suite de integración de API ejecuta por separado los recorridos completos de Users/Auth, incluido correo y concurrencia.
 
 Para reproducirla localmente en puertos distintos de los de desarrollo:
 
@@ -92,3 +92,7 @@ pnpm format:check
 pnpm docker:ci:config
 docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.11 -color
 ```
+
+## API architecture and contracts
+
+Repository checks run `pnpm check:architecture` to reject framework imports in domain/application, reversed dependencies and access to another module’s internals. API build exports and checks OpenAPI, retaining it for seven days. Worker changes trigger the API pipeline and Docker checks; the API image contains the worker executable. The reusable pipeline and consolidated quality gate remain in place.

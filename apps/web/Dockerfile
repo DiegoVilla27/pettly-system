@@ -5,6 +5,7 @@ RUN npm install --global pnpm@11.24.0
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
+COPY packages/notifications-runtime/package.json ./packages/notifications-runtime/package.json
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm exec nx build web

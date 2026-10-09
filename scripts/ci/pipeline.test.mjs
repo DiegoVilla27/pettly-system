@@ -61,6 +61,18 @@ test('mobile no activa contenedores y documentación no recompila aplicaciones',
   });
 });
 
+test('worker and authentication integration infrastructure activate API validation', () => {
+  for (const file of [
+    'apps/worker/src/main.ts',
+    'scripts/testing/api-integration.mjs',
+    'scripts/check-api-architecture.mjs',
+  ]) {
+    const affected = classifyChanges([file]);
+    assert.equal(affected.api, true, file);
+    assert.equal(affected.docker, true, file);
+  }
+});
+
 test('ejecución manual completa ignora filtros de cambios', () =>
   assert.deepEqual(classifyChanges([], true), all));
 

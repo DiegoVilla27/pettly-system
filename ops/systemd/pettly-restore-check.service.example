@@ -1,0 +1,12 @@
+[Unit]
+Description=Pettly weekly encrypted backup and isolated restore drill
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+User=pettly-operator
+WorkingDirectory=/srv/pettly
+EnvironmentFile=/etc/pettly/backup.env
+ExecStart=/usr/bin/node /srv/pettly/scripts/ops/backup-job.mjs --verify
+UMask=0077
+NoNewPrivileges=true

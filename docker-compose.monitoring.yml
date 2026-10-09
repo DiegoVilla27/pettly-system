@@ -1,0 +1,22 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ['monitoring']
+    restart: unless-stopped
+    command:
+      [
+        '--config.file=/etc/prometheus/prometheus.yml',
+        '--storage.tsdb.retention.time=7d',
+        '--storage.tsdb.retention.size=1GB',
+      ]
+    ports: ['127.0.0.1:${PROMETHEUS_PORT:-9090}:9090']
+    volumes:
+      - ./ops/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/monitoring/pettly-alerts.yml:/etc/prometheus/pettly-alerts.yml:ro
+      - ./tmp/monitoring/metrics-token:/etc/pettly/metrics-token:ro
+      - pettly-prometheus:/prometheus
+    networks: ['shared-network']
+    mem_limit: 512m
+    cpus: 0.5
+volumes:
+  pettly-prometheus:

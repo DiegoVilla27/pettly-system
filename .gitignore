@@ -51,7 +51,8 @@ Thumbs.db
 
 # Next.js
 .next
-out
+/out/
+/apps/web/out/
 
 .angular
 .pnpm-store/
@@ -61,3 +62,10 @@ out
 .env.*
 !.env.example
 .husky/_/
+
+# Generated API contract
+apps/api/openapi.json
+*.tsbuildinfo
+
+# Encrypted database backups and local deployment secrets
+/backups/

@@ -101,6 +101,16 @@ jobs:
         env:
           PROJECT: ${{ inputs.project }}
         run: pnpm exec nx build "$PROJECT"
+      - name: Generate and validate OpenAPI
+        if: inputs.project == 'api'
+        run: node scripts/export-openapi.mjs
+      - uses: actions/upload-artifact@v4
+        if: inputs.project == 'api'
+        with:
+          name: api-openapi
+          path: apps/api/openapi.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Complete standalone web artifact
         if: inputs.project == 'web'
         run: |

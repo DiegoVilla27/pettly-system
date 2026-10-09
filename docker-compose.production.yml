@@ -1,0 +1,118 @@
+name: pettly-production
+x-runtime: &runtime
+  NODE_ENV: production
+  DATABASE_URL: ${DATABASE_URL_DOCKER:?Set dedicated production Pettly database URL}
+  REDIS_URL: ${REDIS_URL_DOCKER:?Set production Redis URL}
+  REDIS_PREFIX: ${REDIS_PREFIX:?Set unique Pettly production prefix}
+  JWT_SECRET: ${JWT_SECRET:?Set independent production secret}
+  MAIL_ENCRYPTION_KEY: ${MAIL_ENCRYPTION_KEY:?Set production encryption key}
+  METRICS_TOKEN: ${METRICS_TOKEN:?Set dedicated monitoring token}
+  WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:?Set HTTPS client URL}
+  CORS_ORIGINS: ${CORS_ORIGINS:?Set actual HTTPS client origins}
+  SMTP_HOST: ${SMTP_HOST:?Set actual SMTP provider}
+  SMTP_PORT: ${SMTP_PORT:-465}
+  SMTP_SECURE: ${SMTP_SECURE:-true}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  MAIL_FROM: ${MAIL_FROM:?Set verified production sender}
+  PETTLY_COMMISSION_PERCENT: ${PETTLY_COMMISSION_PERCENT:-10}
+  ALLOW_INSECURE_LOCAL_DEV: 'false'
+  SWAGGER_ENABLED: 'false'
+  RUN_DATABASE_MIGRATIONS: 'false'
+services:
+  migrate:
+    image: ${PETTLY_API_IMAGE:?Set immutable API image tag or digest}
+    profiles: ['tools']
+    environment: *runtime
+    command:
+      [
+        'node',
+        'node_modules/prisma/build/index.js',
+        'migrate',
+        'deploy',
+        '--schema',
+        'prisma/schema.prisma',
+      ]
+    networks: ['shared-network']
+  api:
+    image: ${PETTLY_API_IMAGE:?Set immutable API image tag or digest}
+    environment: *runtime
+    restart: unless-stopped
+    ports: ['127.0.0.1:${API_PORT:-3100}:3000']
+    networks: ['shared-network']
+    read_only: true
+    tmpfs: ['/tmp']
+    init: true
+    stop_grace_period: 30s
+    mem_limit: 1g
+    cpus: 1
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+  worker:
+    image: ${PETTLY_API_IMAGE:?Set immutable API image tag or digest}
+    environment: *runtime
+    command: ['node', 'dist/worker.js']
+    networks: ['shared-network']
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp']
+    init: true
+    stop_grace_period: 30s
+    mem_limit: 512m
+    cpus: 1
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "const fs=require('fs');try{process.exit(Date.now()-Number(fs.readFileSync('/tmp/pettly-worker-heartbeat','utf8'))<45000?0:1)}catch{process.exit(1)}",
+        ]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+  retention:
+    image: ${PETTLY_API_IMAGE:?Set immutable API image tag or digest}
+    profiles: ['operations']
+    environment:
+      <<: *runtime
+      RETENTION_APPLY: ${RETENTION_APPLY:-false}
+    command: ['node', 'scripts/ops/retention-loop.mjs']
+    networks: ['shared-network']
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp']
+    mem_limit: 256m
+    cpus: 0.25
+  web:
+    image: ${PETTLY_WEB_IMAGE:?Set immutable web image tag or digest}
+    environment: { API_INTERNAL_URL: 'http://api:3000/api' }
+    restart: unless-stopped
+    ports: ['127.0.0.1:${WEB_PORT:-3101}:3000']
+    networks: ['shared-network']
+    init: true
+    mem_limit: 512m
+    cpus: 0.5
+  admin:
+    image: ${PETTLY_ADMIN_IMAGE:?Set immutable admin image tag or digest}
+    restart: unless-stopped
+    ports: ['127.0.0.1:${ADMIN_PORT:-4300}:80']
+    networks: ['shared-network']
+    mem_limit: 128m
+    cpus: 0.25
+networks:
+  shared-network:
+    external: true
