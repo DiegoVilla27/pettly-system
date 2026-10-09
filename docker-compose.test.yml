@@ -1,0 +1,26 @@
+# Fully isolated integration infrastructure. Never joins shared-network.
+name: ${PETTLY_TEST_PROJECT:-pettly-auth-test}
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: pettly_test
+      POSTGRES_PASSWORD: test-only-password
+      POSTGRES_DB: pettly_test
+    ports: ['127.0.0.1::5432']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pettly_test -d pettly_test']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    ports: ['127.0.0.1:${PETTLY_REDIS_TEST_PORT:-}:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  mailpit:
+    image: axllent/mailpit:v1.29
+    ports: ['127.0.0.1::1025', '127.0.0.1::8025']

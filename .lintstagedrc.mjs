@@ -18,7 +18,7 @@ export default {
         `pnpm exec prettier --write ${formatted.map(quote).join(' ')}`,
       );
 
-    for (const project of ['api', 'web', 'admin']) {
+    for (const project of ['api', 'web', 'admin', 'worker']) {
       const projectFiles = files.filter((file) =>
         relative(file).startsWith(`apps/${project}/`),
       );

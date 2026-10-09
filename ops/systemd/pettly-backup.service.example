@@ -1,0 +1,12 @@
+[Unit]
+Description=Pettly encrypted PostgreSQL backup
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+User=pettly-operator
+WorkingDirectory=/srv/pettly
+EnvironmentFile=/etc/pettly/backup.env
+ExecStart=/usr/bin/node /srv/pettly/scripts/ops/backup-job.mjs
+UMask=0077
+NoNewPrivileges=true

@@ -1,9 +1,7 @@
 name: pettly
-
 networks:
   shared-network:
     external: true
-
 services:
   api:
     build:
@@ -11,6 +9,7 @@ services:
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
       NODE_ENV: production
       PORT: 3000
       DB_HOST: ${DB_HOST:-global_postgres}
@@ -18,22 +17,34 @@ services:
       DB_NAME: ${DB_NAME:-pettly_db}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-}
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-}
+      REDIS_URL: ${REDIS_URL_DOCKER:-redis://global_redis:6379}
+      REDIS_PREFIX: ${REDIS_PREFIX:-pettly:dev}
+      JWT_SECRET: ${JWT_SECRET:-}
+      MAIL_ENCRYPTION_KEY: ${MAIL_ENCRYPTION_KEY:-}
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      MAIL_FROM: ${MAIL_FROM:-Pettly <support@pettly.test>}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:3101}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3101,http://localhost:4300}
+      ALLOW_INSECURE_LOCAL_DEV: ${ALLOW_INSECURE_LOCAL_DEV:-false}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      PETTLY_COMMISSION_PERCENT: ${PETTLY_COMMISSION_PERCENT:-10}
     ports:
-      - '${API_PORT:-3100}:3000'
-    networks: [shared-network]
+      - ${API_PORT:-3100}:3000
+    networks:
+      - shared-network
     healthcheck:
       test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/api').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
       interval: 10s
       timeout: 5s
       start_period: 20s
       retries: 6
-
+    image: pettly-api:latest
   web:
     build:
       context: .
@@ -42,37 +53,97 @@ services:
     environment:
       API_INTERNAL_URL: http://api:3000/api
     ports:
-      - '${WEB_PORT:-3101}:3000'
-    networks: [shared-network]
+      - ${WEB_PORT:-3101}:3000
+    networks:
+      - shared-network
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
       test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
       interval: 10s
       timeout: 5s
       start_period: 20s
       retries: 6
-
   admin:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
     restart: unless-stopped
     ports:
-      - '${ADMIN_PORT:-4300}:80'
-    networks: [shared-network]
+      - ${ADMIN_PORT:-4300}:80
+    networks:
+      - shared-network
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1/']
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1/
       interval: 10s
       timeout: 5s
       retries: 6
+  mailpit:
+    image: axllent/mailpit:v1.29
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:8025:8025
+      - 127.0.0.1:1025:1025
+    networks:
+      - shared-network
+  worker:
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "const fs=require('fs');try{process.exit(Date.now()-Number(fs.readFileSync('/tmp/pettly-worker-heartbeat','utf8'))<45000?0:1)}catch{process.exit(1)}",
+        ]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    image: pettly-api:latest
+    command:
+      - node
+      - dist/worker.js
+    restart: unless-stopped
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: ${DB_HOST:-global_postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-pettly_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-}
+      REDIS_URL: ${REDIS_URL_DOCKER:-redis://global_redis:6379}
+      REDIS_PREFIX: ${REDIS_PREFIX:-pettly:dev}
+      JWT_SECRET: ${JWT_SECRET:-}
+      MAIL_ENCRYPTION_KEY: ${MAIL_ENCRYPTION_KEY:-}
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      MAIL_FROM: ${MAIL_FROM:-Pettly <support@pettly.test>}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:3101}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3101,http://localhost:4300}
+      ALLOW_INSECURE_LOCAL_DEV: ${ALLOW_INSECURE_LOCAL_DEV:-false}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      PETTLY_COMMISSION_PERCENT: ${PETTLY_COMMISSION_PERCENT:-10}
+    networks:
+      - shared-network
+    depends_on:
+      api:
+        condition: service_healthy
+      mailpit:
+        condition: service_started

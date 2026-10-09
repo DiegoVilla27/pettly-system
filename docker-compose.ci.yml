@@ -1,45 +1,82 @@
-# Infraestructura temporal para CI. No usa el PostgreSQL compartido del equipo.
 name: ${CI_COMPOSE_PROJECT:-pettly-ci}
-
 networks:
   shared-network:
     external: false
     name: ${CI_NETWORK_NAME:-pettly-ci-network}
-
 services:
   postgres:
     image: postgres:17-alpine
-    restart: 'no'
+    restart: no
     environment:
       POSTGRES_DB: pettly_ci
       POSTGRES_USER: pettly_ci
       POSTGRES_PASSWORD: ci-only-password
     networks:
       shared-network:
-        aliases: [global_postgres]
+        aliases:
+          - global_postgres
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U pettly_ci -d pettly_ci']
+      test:
+        - CMD-SHELL
+        - pg_isready -U pettly_ci -d pettly_ci
       interval: 5s
       timeout: 5s
       retries: 12
-
   api:
     image: ${CI_COMPOSE_PROJECT:-pettly-ci}-api:latest
-    restart: 'no'
+    restart: no
     environment:
       DB_HOST: global_postgres
       DB_PORT: 5432
       DB_NAME: pettly_ci
       DB_USER: pettly_ci
       DB_PASSWORD: ci-only-password
+      DATABASE_URL: postgresql://pettly_ci:ci-only-password@postgres:5432/pettly_ci?schema=public
+      REDIS_URL: redis://redis:6379
+      REDIS_PREFIX: ${CI_COMPOSE_PROJECT:-pettly-ci}
+      JWT_SECRET: ci-only-jwt-signing-key-not-for-production
+      MAIL_ENCRYPTION_KEY: ci-only-mail-encryption-key-not-for-production
+      ALLOW_INSECURE_LOCAL_DEV: 'true'
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      WEB_PUBLIC_URL: http://localhost:13101
     depends_on:
       postgres:
         condition: service_healthy
-
+      redis:
+        condition: service_healthy
   web:
     image: ${CI_COMPOSE_PROJECT:-pettly-ci}-web:latest
-    restart: 'no'
-
+    restart: no
   admin:
     image: ${CI_COMPOSE_PROJECT:-pettly-ci}-admin:latest
-    restart: 'no'
+    restart: no
+  redis:
+    image: redis:7-alpine
+    restart: no
+    networks:
+      - shared-network
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  mailpit:
+    restart: no
+    ports: !reset []
+  worker:
+    image: ${CI_COMPOSE_PROJECT:-pettly-ci}-api:latest
+    restart: no
+    environment:
+      DATABASE_URL: postgresql://pettly_ci:ci-only-password@postgres:5432/pettly_ci?schema=public
+      REDIS_URL: redis://redis:6379
+      REDIS_PREFIX: ${CI_COMPOSE_PROJECT:-pettly-ci}
+      JWT_SECRET: ci-only-jwt-signing-key-not-for-production
+      MAIL_ENCRYPTION_KEY: ci-only-mail-encryption-key-not-for-production
+      ALLOW_INSECURE_LOCAL_DEV: 'true'
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      WEB_PUBLIC_URL: http://localhost:13101

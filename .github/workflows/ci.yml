@@ -68,6 +68,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
       - run: pnpm format:check
       - run: pnpm test:ci
+      - run: pnpm check:architecture
       - run: pnpm docker:ci:config
       - name: Conventional Commits
         if: github.event_name == 'pull_request'

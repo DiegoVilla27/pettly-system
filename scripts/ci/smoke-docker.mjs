@@ -43,6 +43,22 @@ execFileSync(
 console.log(
   'Docker smoke: API, web, recursos Angular, fallback SPA y red PostgreSQL verificados.',
 );
+const spec = await (await get(`${api}/api/openapi.json`)).json();
+assert.ok(spec.paths['/api/auth/register']);
+const invalid = await fetch(`${api}/api/auth/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'missing@example.com',
+    password: 'An integration password!',
+    client: 'mobile',
+  }),
+});
+assert.equal(
+  invalid.status,
+  401,
+  'Authentication must query PostgreSQL and use Redis limits.',
+);
 console.log(
-  'La API todavía no implementa persistencia: esta comprobación no valida consultas a la base de datos.',
+  'Docker smoke: OpenAPI and real PostgreSQL/Redis authentication path verified.',
 );

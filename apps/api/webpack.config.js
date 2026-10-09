@@ -1,7 +1,14 @@
 const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
-const { join } = require('path');
+const { join, isAbsolute } = require('path');
 
 module.exports = {
+  externals: [
+    ({ request }, callback) => {
+      if (request && !request.startsWith('.') && !isAbsolute(request)) {
+        callback(null, `commonjs ${request}`);
+      } else callback();
+    },
+  ],
   output: {
     path: join(__dirname, 'dist'),
     clean: true,
@@ -12,6 +19,7 @@ module.exports = {
   plugins: [
     new NxAppWebpackPlugin({
       target: 'node',
+      mergeExternals: true,
       compiler: 'tsc',
       main: './src/main.ts',
       tsConfig: './tsconfig.app.json',

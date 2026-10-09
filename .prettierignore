@@ -13,3 +13,4 @@
 **/.next
 **/dist
 apps/web/next-env.d.ts
+**/.agents/

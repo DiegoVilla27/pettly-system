@@ -75,7 +75,59 @@
         "executor": "nx:run-commands",
         "options": {
           "command": "tsc --noEmit -p apps/api/tsconfig.app.json"
+        },
+        "dependsOn": [
+          "prisma-generate",
+          "notifications-runtime:build"
+        ]
+      },
+      "prisma-generate": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "pnpm exec prisma generate --schema apps/api/prisma/schema.prisma"
         }
+      },
+      "build": {
+        "dependsOn": [
+          "prisma-generate",
+          "notifications-runtime:build"
+        ]
+      },
+      "test": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "notifications-runtime:build"
+        ],
+        "options": {
+          "command": "node --import tsx --test apps/api/tests/unit/*.test.ts"
+        }
+      },
+      "test:integration": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build",
+          "worker:build"
+        ],
+        "options": {
+          "command": "node scripts/testing/api-integration.mjs"
+        }
+      },
+      "architecture": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node scripts/check-api-architecture.mjs"
+        }
+      },
+      "bootstrap-super-admin": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node scripts/bootstrap-super-admin.mjs"
+        },
+        "cache": false
       }
     }
   },
@@ -83,9 +135,26 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "^11.4.7",
+    "@pettly/notifications-runtime": "workspace:*",
+    "@prisma/client": "6.19.0",
+    "argon2": "^0.45.1",
+    "bullmq": "^6.3.11",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.6",
+    "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "nestjs-zod": "^5.5.0",
+    "nodemailer": "^10.0.16",
+    "prisma": "6.19.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
-    "tslib": "^2.3.0"
+    "sharp": "0.34.5",
+    "tslib": "^2.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0"

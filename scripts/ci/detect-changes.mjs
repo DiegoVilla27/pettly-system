@@ -20,6 +20,12 @@ export function classifyChanges(files, force = false) {
       if (file.startsWith(`apps/${project}/`)) result[project] = true;
     }
     if (
+      /^(?:apps\/worker\/|scripts\/testing\/|scripts\/(?:check-api-architecture|build-worker|export-openapi|bootstrap-super-admin)\.mjs$)/.test(
+        file,
+      )
+    )
+      result.api = true;
+    if (
       /^(?:docker-compose[^/]*\.ya?ml|\.dockerignore|\.env\.example)$/.test(
         file,
       )
