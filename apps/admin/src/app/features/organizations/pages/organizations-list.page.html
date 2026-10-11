@@ -1,0 +1,166 @@
+<div class="flex flex-wrap items-start justify-between gap-5">
+  <div>
+    <p class="text-xs font-semibold tracking-widest text-primary uppercase">
+      Administración
+    </p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">Organizaciones</h1>
+    <p class="mt-3 max-w-2xl text-muted">
+      Empresas y refugios, con cada revisión y responsabilidad en su lugar.
+    </p>
+  </div>
+  <a
+    routerLink="crear"
+    class="inline-flex min-h-12 items-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-strong"
+    >Crear organización</a
+  >
+</div>
+<form
+  [formGroup]="form"
+  (ngSubmit)="search()"
+  class="mt-8 rounded-3xl border border-line bg-white p-5 sm:p-6"
+  aria-label="Buscar y filtrar organizaciones"
+>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="sm:col-span-2">
+      <label for="organization-search" class="mb-2 block text-sm font-semibold"
+        >Buscar organizaciones</label
+      ><input
+        id="organization-search"
+        type="search"
+        formControlName="search"
+        maxlength="100"
+        placeholder="Nombre, razón social o registro"
+        [attr.aria-invalid]="form.controls.search.invalid&&form.controls.search.touched"
+        aria-describedby="organization-search-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-paper px-4 py-3"
+      />
+      <p id="organization-search-help" class="mt-2 text-xs text-muted">
+        Hasta 100 caracteres. Puedes combinar los filtros.
+      </p>
+    </div>
+    <div>
+      <label for="organization-status" class="mb-2 block text-sm font-semibold"
+        >Estado</label
+      ><select
+        id="organization-status"
+        formControlName="status"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        @for(status of statuses;track status.value){
+        <option [value]="status.value">{{status.label}}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="organization-type" class="mb-2 block text-sm font-semibold"
+        >Tipo</label
+      ><select
+        id="organization-type"
+        formControlName="type"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        @for(type of types;track type.value){
+        <option [value]="type.value">{{type.label}}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="organization-country" class="mb-2 block text-sm font-semibold"
+        >País</label
+      ><select
+        id="organization-country"
+        formControlName="countryCode"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        @for(country of countries;track country.value){
+        <option [value]="country.value">{{country.label}}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="organization-limit" class="mb-2 block text-sm font-semibold"
+        >Resultados por página</label
+      ><select
+        id="organization-limit"
+        formControlName="limit"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+  </div>
+  <div class="mt-5 flex flex-wrap gap-3">
+    <button
+      type="submit"
+      class="min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white"
+    >
+      Buscar</button
+    ><button
+      type="button"
+      (click)="clear()"
+      class="min-h-11 rounded-xl border border-line px-5 text-sm font-medium"
+    >
+      Limpiar filtros
+    </button>
+  </div>
+</form>
+<div class="mt-6"><app-problem [problem]="store.problem()" /></div>
+@if(store.loading()){
+<p role="status" class="mt-8 text-sm text-muted">Cargando organizaciones…</p>
+}@else if(store.problem()){<button
+  type="button"
+  (click)="store.load(filters())"
+  class="mt-4 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar</button
+>}@else{
+<p role="status" class="mt-6 text-sm text-muted">
+  {{store.total()}} {{store.total()===1?'organización
+  encontrada':'organizaciones encontradas'}}
+</p>
+<ul class="mt-4 space-y-3" aria-label="Resultados de organizaciones">
+  @for(org of store.entities();track org.id){
+  <li
+    class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-white p-5"
+  >
+    <div class="min-w-0">
+      <p class="text-xs text-muted">{{org.typeLabel}}</p>
+      <a
+        [routerLink]="[org.id]"
+        class="mt-2 inline-block font-semibold break-words underline-offset-4 hover:underline"
+        >{{org.name}}</a
+      >
+      <p class="mt-2 text-xs text-muted">Versión {{org.version}}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <app-organization-badge [organization]="org" /><a
+        [routerLink]="[org.id]"
+        [attr.aria-label]="'Ver detalle de '+org.name"
+        class="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-medium"
+        >Ver detalle</a
+      >
+    </div>
+  </li>
+  }@empty{
+  <li class="rounded-2xl border border-line bg-white p-8 text-center">
+    <h2 class="font-semibold">
+      No encontramos organizaciones con estos filtros.
+    </h2>
+    <p class="mt-3 text-sm text-muted">
+      Prueba otra búsqueda o limpia los filtros.
+    </p>
+  </li>
+  }
+</ul>
+<app-pagination
+  [page]="store.page()"
+  [total]="store.total()"
+  [limit]="store.limit()"
+  (pageChange)="page($event)"
+/>}

@@ -70,5 +70,12 @@ export class OwnBookingsQueryDto extends createZodDto(
   z.strictObject(filters),
 ) {}
 export class ManagedBookingsQueryDto extends createZodDto(
-  z.strictObject({ ...filters, organizationId: z.uuid() }),
+  z.strictObject({
+    ...filters,
+    organizationId: z.uuid(),
+    search: text(2, 100).optional().meta({
+      description:
+        'Case-insensitive literal search in accepted service, pet or contact names. Scoped to the explicit business.',
+    }),
+  }),
 ) {}

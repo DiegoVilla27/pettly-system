@@ -17,3 +17,14 @@ export interface Movement {
   requestId: string;
   createdAt: Date;
 }
+
+export type InventoryRow =
+  import('../../../catalog/application/ports/in/inventory-catalog').InventoryVariant & {
+    stock: import('../../domain/aggregates/stock').StockState;
+  };
+export interface InventoryPage {
+  items: InventoryRow[];
+  total: number;
+  page: number;
+  limit: number;
+}

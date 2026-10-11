@@ -1,0 +1,74 @@
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="snapshot-title"
+>
+  <h2 id="snapshot-title" class="text-lg font-semibold">
+    Perfil público capturado
+  </h2>
+  <p class="mt-3 text-sm text-muted">
+    Este es el perfil capturado al enviar a revisión. Los cambios privados del
+    animal no lo actualizan automáticamente. Una foto eliminada deja de estar
+    disponible.
+  </p>
+  @if (publication().snapshot; as a) {
+    <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+      <div>
+        <dt class="text-muted">Nombre</dt>
+        <dd>{{ a.name }}</dd>
+      </div>
+      <div>
+        <dt class="text-muted">Especie</dt>
+        <dd>{{ labels[a.species] }}</dd>
+      </div>
+      <div>
+        <dt class="text-muted">Raza</dt>
+        <dd>{{ a.breed ?? 'Sin información' }}</dd>
+      </div>
+      <div>
+        <dt class="text-muted">Sexo / tamaño</dt>
+        <dd>{{ labels[a.sex] }} / {{ labels[a.size] }}</dd>
+      </div>
+      <div>
+        <dt class="text-muted">Nacimiento</dt>
+        <dd>
+          {{ a.dateOfBirth ?? 'Sin información'
+          }}{{ a.birthDateEstimated ? ' (estimado)' : '' }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-muted">Color</dt>
+        <dd>{{ a.color ?? 'Sin información' }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-muted">Descripción del animal</dt>
+        <dd class="mt-2 break-words">
+          {{ a.description ?? 'Sin información' }}
+        </dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-muted">Cuidados especiales públicos</dt>
+        <dd class="mt-2 break-words">
+          {{ a.specialNeeds ?? 'Sin información' }}
+        </dd>
+      </div>
+    </dl>
+    <div class="mt-4 flex flex-wrap gap-3">
+      @for (p of a.photos; track p.mediaId) {
+        <button
+          type="button"
+          class="mt-4 min-h-11 rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+          (click)="photograph.emit(p.mediaId)"
+        >
+          Ver fotografía {{ p.position + 1 }}
+        </button>
+      } @empty {
+        <p class="text-sm text-muted">El perfil no tiene fotos.</p>
+      }
+    </div>
+  } @else {
+    <p class="mt-4 text-sm text-muted">
+      El perfil se capturará al enviar a revisión, con al menos una fotografía
+      válida.
+    </p>
+  }
+</section>

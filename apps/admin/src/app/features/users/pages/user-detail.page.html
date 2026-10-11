@@ -1,0 +1,103 @@
+<app-problem [problem]="store.problem()" /> @if(invitationQueued &&
+!store.success()) {
+<p role="status" class="mb-5 rounded-xl bg-sage p-4 text-sm text-primary">
+  Cuenta creada. El envío de la invitación quedó programado.
+</p>
+} @if(store.success()) {
+<p role="status" class="mb-5 rounded-xl bg-sage p-4 text-sm text-primary">
+  {{ store.success() }}
+</p>
+} @if(store.loading()) {
+<p role="status" class="py-8 text-muted">Cargando cuenta…</p>
+} @else if(store.user(); as user) {
+<app-user-heading [user]="user" />
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="user-information"
+>
+  <h2 id="user-information" class="text-lg font-semibold">
+    Información del perfil
+  </h2>
+  <dl class="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+    @for(field of profile();track field.label) {
+    <div>
+      <dt class="text-xs font-medium text-muted">{{ field.label }}</dt>
+      <dd class="mt-2 text-sm font-semibold break-words">
+        {{ field.value ?? 'Sin especificar' }}
+      </dd>
+    </div>
+    }
+    <div>
+      <dt class="text-xs font-medium text-muted">Rol global</dt>
+      <dd class="mt-2 text-sm font-semibold">{{ user.roleLabel }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium text-muted">Correo</dt>
+      <dd class="mt-2 text-sm font-semibold">
+        {{ user.emailVerifiedAt ? 'Verificado' : 'Sin verificar' }}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium text-muted">Creado</dt>
+      <dd class="mt-2 text-sm">
+        {{ user.createdAt | date:'dd/MM/yyyy HH:mm' }}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium text-muted">Actualizado</dt>
+      <dd class="mt-2 text-sm">
+        {{ user.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+      </dd>
+    </div>
+  </dl>
+  <p class="mt-6 text-xs break-all text-muted">ID: {{ user.id }}</p>
+</section>
+@if(user.status !== 'deleted') {
+<div class="mt-6">
+  <app-destructive-action
+    id="user-delete"
+    title="Eliminar cuenta"
+    reasonLabel="Motivo de eliminación de cuenta"
+    description="Anonimiza el perfil, elimina credenciales y revoca todas las sesiones. El historial conserva su UUID; la cuenta no puede reactivarse. Se protegen el último superadministrador y responsables vigentes."
+    [context]="user.id+':'+user.updatedAt"
+    [blocked]="store.busy()||store.refreshRequired()"
+    (confirmed)="store.execute({kind:'delete',userId:user.id,body:{reason:$event}})"
+  />
+</div>
+<div class="mt-7 grid gap-6 xl:grid-cols-2">
+  <app-audited-action
+    [user]="user"
+    kind="status"
+    [busy]="store.busy()||store.refreshRequired()"
+    (actionRequested)="store.execute($event)"
+  />@if(user.status === 'active' && !user.emailVerifiedAt) {<app-audited-action
+    [user]="user"
+    kind="resend"
+    [busy]="store.busy()||store.refreshRequired()"
+    (actionRequested)="store.execute($event)"
+  />}
+</div>
+} @else {
+<p class="mt-7 rounded-xl bg-paper p-5 text-sm text-muted">
+  Esta cuenta está eliminada y anonimizada. No se puede reactivar ni editar.
+</p>
+} } @else if(!store.loading()) {
+<h1 class="mt-4 text-2xl font-semibold">No pudimos cargar la cuenta</h1>
+<button
+  type="button"
+  (click)="store.load(userId())"
+  class="mt-4 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar</button
+>} @if(store.refreshRequired()){
+<p role="status" class="mt-5 text-sm">
+  Actualiza la cuenta y revisa su historial antes de repetir una acción.
+</p>
+<button
+  type="button"
+  (click)="store.load(userId())"
+  [disabled]="store.busy()"
+  class="mt-3 min-h-11 rounded-xl border border-line px-4"
+>
+  Actualizar cuenta</button
+>}

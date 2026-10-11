@@ -68,19 +68,19 @@ Customer contact/order snapshots are private financial/fulfillment records retai
 
 Swagger: http://localhost:3100/api/docs; OpenAPI JSON: http://localhost:3100/api/openapi.json. All routes below require an active verified account and access JWT; responses use no-store. Unknown request/response fields are rejected; private fingerprints/idempotency internals are omitted.
 
-| Method and path                                             | Contract/scope                                                                                                              |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| GET /api/organizations/{organizationId}/order-policy        | Owning settings permission; `{policy:null}` until configured.                                                               |
-| PUT /api/organizations/{organizationId}/order-policy        | Settings permission; explicit configuration, reason and expectedVersion. Returns `{policy}`.                                |
-| GET /api/organizations/{organizationId}/order-policy/audits | Settings permission; bounded historical configuration snapshots.                                                            |
-| POST /api/checkout/quotes                                   | Own cart: `{expectedCartVersion,fulfillment,contact}`.                                                                      |
-| GET /api/checkout/quotes/{quoteId}                          | Only the buyer; expired quote still readable.                                                                               |
-| POST /api/orders                                            | Own accepted quote: `{quoteId,expectedTotalMinor,consent:true,idempotencyKey}`. Returns awaiting_payment, without charging. |
-| GET /api/orders                                             | Defaults to own orders; organizationId requires owning fulfillment permission. Optional status, page and limit.             |
-| GET /api/orders/{orderId}                                   | Buyer or owning fulfillment permission; lazy deadline recovery.                                                             |
-| POST /api/orders/{orderId}/cancel                           | Unpaid only: `{expectedVersion,reason}`.                                                                                    |
-| PATCH /api/orders/{orderId}/fulfillment                     | Staff only: `{expectedVersion,reason,status}` for the documented transitions.                                               |
-| GET /api/orders/{orderId}/audits                            | Buyer or fulfillment permission; page/limit.                                                                                |
+| Method and path                                             | Contract/scope                                                                                                                                                              |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET /api/organizations/{organizationId}/order-policy        | Owning settings permission; `{policy:null}` until configured.                                                                                                               |
+| PUT /api/organizations/{organizationId}/order-policy        | Settings permission; explicit configuration, reason and expectedVersion. Returns `{policy}`.                                                                                |
+| GET /api/organizations/{organizationId}/order-policy/audits | Settings permission; bounded historical configuration snapshots.                                                                                                            |
+| POST /api/checkout/quotes                                   | Own cart: `{expectedCartVersion,fulfillment,contact}`.                                                                                                                      |
+| GET /api/checkout/quotes/{quoteId}                          | Only the buyer; expired quote still readable.                                                                                                                               |
+| POST /api/orders                                            | Own accepted quote: `{quoteId,expectedTotalMinor,consent:true,idempotencyKey}`. Returns awaiting_payment, without charging.                                                 |
+| GET /api/orders                                             | Defaults to own orders; organizationId requires owning fulfillment permission. Optional status, literal accepted recipient/city or exact order UUID search, page and limit. |
+| GET /api/orders/{orderId}                                   | Buyer or owning fulfillment permission; lazy deadline recovery.                                                                                                             |
+| POST /api/orders/{orderId}/cancel                           | Unpaid only: `{expectedVersion,reason}`.                                                                                                                                    |
+| PATCH /api/orders/{orderId}/fulfillment                     | Staff only: `{expectedVersion,reason,status}` for the documented transitions.                                                                                               |
+| GET /api/orders/{orderId}/audits                            | Buyer or fulfillment permission; page/limit.                                                                                                                                |
 
 POST returns 201; GET/PUT/PATCH return 200. List/audits default page=1/limit=20, max page=10000/limit=50. Order response includes UUIDs, status/version, immutable snapshot, total/currency, nullable paymentId/paidAt and timestamps. System paid/expired audits have actorId=null; every revision has version and correlation UUID.
 
@@ -110,3 +110,11 @@ New quotes include a server-calculated commission allocation from PETTLY_COMMISS
 ## Notifications integration — 2026-10-09
 
 Cada transición auditada publica un evento mínimo en Notifications para comprador y responsable actual de la empresa; incluye creación/cancelación/vencimiento, pago verificado y preparación/entrega. Snapshot/inbox/outbox/auditoría comparten transacción. Solo el puerto de liquidación verificada produce paid; la pasarela continúa deshabilitada. Preferencia ordersEmail controla correo, no la bandeja. Ver [Notifications](notifications.md).
+
+## Backoffice management — 2026-10-10
+
+Implemented Angular orders/fulfillment at `/pedidos`; see [Backoffice Orders](backoffice-orders.md). GET orders now accepts search (trimmed 2–100 characters, no control characters): case-insensitive literal accepted contact recipient/city or exact UUID, within the same authorized scope and status/pagination. Prisma escapes percent/underscore/backslash pattern characters. No new migration, public paid endpoint or payment-provider activation.
+
+Backoffice delivery verification: 107 Angular/69 API unit tests and twelve isolated browser scenarios passed; scoped literal recipient/city/UUID search and actual trusted Payments test-provider capture/stock consumption, cancellation and delivery/pickup are verified. See [Backoffice Orders](backoffice-orders.md).
+
+Company administrators can configure the existing versioned commercial policy in the Angular [commercial conditions feature](backoffice-commercial.md): COP/Colombia pickup/shipping, included or explicit added taxes, terms and audit. This records future purchase conditions and the gateway split agreement; it does not activate real collection.

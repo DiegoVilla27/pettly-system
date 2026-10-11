@@ -1,0 +1,201 @@
+<div class="flex flex-wrap items-start justify-between gap-5">
+  <div>
+    <p class="text-xs font-semibold tracking-widest text-primary uppercase">
+      Administración
+    </p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">Usuarios</h1>
+    <p class="mt-3 text-muted">
+      Cada cuenta, su información y el acceso que necesita.
+    </p>
+  </div>
+  <a
+    routerLink="invitar"
+    class="inline-flex min-h-12 items-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-strong"
+    >Invitar usuario</a
+  >
+</div>
+<form
+  [formGroup]="form"
+  (ngSubmit)="search()"
+  class="mt-8 rounded-3xl border border-line bg-white p-5 sm:p-6"
+  aria-label="Buscar y filtrar usuarios"
+>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="sm:col-span-2">
+      <label for="user-search" class="mb-2 block text-sm font-semibold"
+        >Buscar usuarios</label
+      ><input
+        id="user-search"
+        type="search"
+        formControlName="search"
+        maxlength="100"
+        placeholder="Nombre, apellido o correo"
+        [attr.aria-invalid]="form.controls.search.invalid && form.controls.search.touched"
+        aria-describedby="user-search-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-paper px-4 py-3"
+      />
+      <p id="user-search-help" class="mt-2 text-xs text-muted">
+        Hasta 100 caracteres. Los filtros se pueden combinar.
+      </p>
+    </div>
+    <div>
+      <label for="user-status" class="mb-2 block text-sm font-semibold"
+        >Estado</label
+      ><select
+        id="user-status"
+        formControlName="status"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        <option value="active">Activo</option>
+        <option value="disabled">Deshabilitado</option>
+        <option value="deleted">Eliminado</option>
+      </select>
+    </div>
+    <div>
+      <label for="user-role" class="mb-2 block text-sm font-semibold"
+        >Rol global</label
+      ><select
+        id="user-role"
+        formControlName="role"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        @for (role of roles; track role.value) {
+        <option [value]="role.value">{{ role.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="user-org-role" class="mb-2 block text-sm font-semibold"
+        >Rol en organización</label
+      ><select
+        id="user-org-role"
+        formControlName="organizationRole"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        @for (role of organizationRoles; track role.value) {
+        <option [value]="role.value">{{ role.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="user-verified" class="mb-2 block text-sm font-semibold"
+        >Correo verificado</label
+      ><select
+        id="user-verified"
+        formControlName="emailVerified"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        <option value="true">Verificado</option>
+        <option value="false">Sin verificar</option>
+      </select>
+    </div>
+    <div>
+      <label for="user-sort" class="mb-2 block text-sm font-semibold"
+        >Ordenar por</label
+      ><select
+        id="user-sort"
+        formControlName="sort"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="createdAt:desc">Más recientes</option>
+        <option value="createdAt:asc">Más antiguos</option>
+        <option value="name:asc">Nombre: A–Z</option>
+        <option value="email:asc">Correo: A–Z</option>
+      </select>
+    </div>
+    <div>
+      <label for="user-limit" class="mb-2 block text-sm font-semibold"
+        >Resultados por página</label
+      ><select
+        id="user-limit"
+        formControlName="limit"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+  </div>
+  <div class="mt-5 flex flex-wrap gap-3">
+    <button
+      type="submit"
+      class="min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-strong"
+    >
+      Buscar</button
+    ><button
+      type="button"
+      (click)="clear()"
+      class="min-h-11 rounded-xl border border-line px-5 text-sm font-medium"
+    >
+      Limpiar filtros
+    </button>
+  </div>
+</form>
+<div class="mt-6"><app-problem [problem]="store.problem()" /></div>
+@if (store.loading()) {
+<p role="status" class="mt-8 text-sm text-muted">Cargando usuarios…</p>
+} @else if (store.problem()) {<button
+  type="button"
+  (click)="store.load(filters())"
+  class="mt-4 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar</button
+>} @else {
+<p role="status" class="mt-6 text-sm text-muted">
+  {{ store.total() }} cuentas encontradas
+</p>
+<ul class="mt-4 space-y-3" aria-label="Resultados de usuarios">
+  @for (user of store.entities(); track user.id) {
+  <li
+    class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-white p-5"
+  >
+    <div class="flex min-w-0 items-center gap-4">
+      <span
+        class="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-sage font-semibold text-primary sm:flex"
+        aria-hidden="true"
+        >{{ user.initials }}</span
+      >
+      <div class="min-w-0">
+        <a
+          [routerLink]="[user.id]"
+          class="font-semibold text-ink underline-offset-4 hover:underline"
+          >{{ user.fullName }}</a
+        >
+        <p class="mt-1 text-sm break-all text-muted">{{ user.email }}</p>
+        <p class="mt-2 text-xs text-muted">
+          {{ user.roleLabel }} · {{ user.emailVerifiedAt ? 'Correo verificado' :
+          'Correo sin verificar' }}
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <app-user-badge [user]="user" /><a
+        [routerLink]="[user.id]"
+        [attr.aria-label]="'Ver detalle de '+user.fullName"
+        class="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-medium"
+        >Ver detalle</a
+      >
+    </div>
+  </li>
+  } @empty {
+  <li class="rounded-2xl border border-line bg-white p-8 text-center">
+    <h2 class="font-semibold">No encontramos cuentas con estos filtros.</h2>
+    <p class="mt-3 text-sm text-muted">
+      Prueba otra búsqueda o limpia los filtros.
+    </p>
+  </li>
+  }
+</ul>
+<app-pagination
+  [page]="store.page()"
+  [total]="store.total()"
+  [limit]="store.limit()"
+  (pageChange)="page($event)"
+/>
+}

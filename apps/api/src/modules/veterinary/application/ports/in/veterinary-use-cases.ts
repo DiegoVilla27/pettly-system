@@ -6,6 +6,7 @@ import type {
 import type {
   CredentialQuery,
   CredentialsQuery,
+  EligibleCredentialsQuery,
 } from '../../queries/credential.queries';
 import type { CredentialState } from '../../results/credential';
 import type { CredentialAudit } from '../out/credentials-repository';
@@ -18,6 +19,20 @@ export interface VeterinaryUseCases {
   list(
     q: CredentialsQuery,
   ): Promise<{ items: CredentialState[]; total: number }>;
+  mine(
+    q: CredentialsQuery,
+  ): Promise<{ items: CredentialState[]; total: number }>;
+  eligibleList(q: EligibleCredentialsQuery): Promise<{
+    items: {
+      id: string;
+      organizationId: string;
+      professionalId: string;
+      professionalName: string;
+      resourceId: string;
+      verifiedUntil: Date;
+    }[];
+    candidateTotal: number;
+  }>;
   document(q: CredentialQuery, mediaId: string): Promise<Uint8Array>;
   audits(
     q: CredentialQuery,

@@ -32,8 +32,18 @@ const fields = {
     description:
       'Publicly shareable care needs included only in the reviewed adoption snapshot.',
   }),
-  vaccinated: z.boolean().nullable(),
-  neutered: z.boolean().nullable(),
+  vaccinated: z.boolean().nullable().meta({
+    type: 'boolean',
+    nullable: true,
+    description:
+      'Declared vaccination status; null means unknown. Not a veterinary certificate.',
+  }),
+  neutered: z.boolean().nullable().meta({
+    type: 'boolean',
+    nullable: true,
+    description:
+      'Declared sterilization status; null means unknown. Not a veterinary certificate.',
+  }),
   microchip: text(30).nullable().meta({
     description:
       'Private identification, never published in adoption listings.',

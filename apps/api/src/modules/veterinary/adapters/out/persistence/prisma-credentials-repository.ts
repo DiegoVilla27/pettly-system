@@ -51,6 +51,10 @@ export class PrismaCredentialsRepository implements CredentialsRepository {
           const where = {
             ...(q.organizationId ? { organizationId: q.organizationId } : {}),
             ...(q.status ? { status: q.status } : {}),
+            ...(q.professionalId ? { professionalId: q.professionalId } : {}),
+            ...(q.verifiedAfter
+              ? { verifiedUntil: { gt: q.verifiedAfter } }
+              : {}),
           };
           const [rows, total] = await Promise.all([
             this.db.client.veterinaryCredential.findMany({

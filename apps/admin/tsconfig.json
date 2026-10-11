@@ -5,7 +5,8 @@
     "experimentalDecorators": true,
     "moduleResolution": "bundler",
     "module": "preserve",
-    "lib": ["es2022", "dom"]
+    "lib": ["es2022", "dom"],
+    "rootDir": "../.."
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

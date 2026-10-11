@@ -67,3 +67,17 @@ Queue/audit page 1–10000, limit 1–50/default20; unknown fields, invalid UUID
 Automated unit/HTTP/SQL tests cover approval boundaries, consent/qualification, private images, complete evidence, self-review, rollback of Media on audit failure, clinical publication/allocation, immutable identity/audit and immediate withdrawal. No real professional is fabricated or approved during local deployment verification.
 
 Verification (2026-10-09): two added unit tests within 64 passing unit tests; veterinary HTTP/SQL scenario within 63 passing real-infrastructure scenarios (64 results with suite). API/worker lint/type/build, schema/architecture and 190-operation OpenAPI validation passed. Migration 013 is applied only to pettly_db using pettly_dev; seven credential/clinical guards verified, no real credentials created. API/worker healthy. Private anonymous routes return 401; mutable review/document/booking fixtures ran only in isolated temporary infrastructure.
+
+## Angular administrative review — 2026-10-09
+
+The superadministrator UI implements the private queue, status/business filters and UUID lookup, professional metadata and account/business links, on-demand authenticated evidence, independent review/rejection, audited revocation and revision history. See [Backoffice veterinary](backoffice-veterinary.md) for routes, contracts and manual checks. Professional creation/correction/upload/resubmission and service/calendar management remain API operations; their self-service screens are separate deliveries.
+
+The nullable verificationReference response declares its existing 500-character maximum so Swagger reflects the actual string-or-null payload rather than an array. OpenAPI export checks this shape and the client is regenerated. No migration or domain-policy change is required.
+
+## Backoffice directory reads
+
+`GET /api/veterinary/credentials/mine` accepts bounded page/limit and optional organization/status. The actor must be active and verified; the application query always derives `professionalId` from the authenticated actor. A caller cannot choose another owner. It returns the existing private credential DTO only for that owner.
+
+`GET /api/veterinary/credentials/eligible?organizationId=<uuid>` requires current `services.manage` in an active Colombian business. Its projection is `id`, `organizationId`, `professionalId`, `professionalName`, `resourceId`, `verifiedUntil`. It does not expose evidence, matriculation, university or private official-register reference. Candidates are approved and unexpired; account verification/status, current business membership and active capacity-one appointment resource are rechecked. `candidateTotal` counts approved unexpired candidates before these current checks; an eligible page can be sparse/empty and pagination must use candidateTotal. The list is a selection aid; the service/booking backend rechecks eligibility at write/use time and through the appointment period.
+
+Queries, inbound port, application handler and PostgreSQL repository filters preserve hexagonal feature boundaries. Authorization is consumed through its public port. OpenAPI documents both reads in English and the TypeScript client is regenerated (197 operations). No schema migration is needed.

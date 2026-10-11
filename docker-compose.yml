@@ -25,7 +25,7 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: '1025'
       MAIL_FROM: ${MAIL_FROM:-Pettly <support@pettly.test>}
-      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:3101}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:4300}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3101,http://localhost:4300}
       ALLOW_INSECURE_LOCAL_DEV: ${ALLOW_INSECURE_LOCAL_DEV:-false}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
@@ -135,7 +135,7 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: '1025'
       MAIL_FROM: ${MAIL_FROM:-Pettly <support@pettly.test>}
-      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:3101}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:4300}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3101,http://localhost:4300}
       ALLOW_INSECURE_LOCAL_DEV: ${ALLOW_INSECURE_LOCAL_DEV:-false}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}

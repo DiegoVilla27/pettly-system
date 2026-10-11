@@ -133,6 +133,19 @@ export class PrismaServicesRepository implements ServicesRepository {
             data: { ...a, snapshot: M.json(a.snapshot) },
           });
         },
+        resourceAudits: async (resourceId, page, limit) => {
+          const where = { resourceId };
+          const [items, total] = await Promise.all([
+            this.db.client.serviceAuditEntry.findMany({
+              where,
+              orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+              skip: (page - 1) * limit,
+              take: limit,
+            }),
+            this.db.client.serviceAuditEntry.count({ where }),
+          ]);
+          return { items, total };
+        },
         audits: async (serviceId, page, limit) => {
           const where = { serviceId };
           const [items, total] = await Promise.all([

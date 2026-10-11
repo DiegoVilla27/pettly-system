@@ -1,0 +1,76 @@
+@if (actions().length) {
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <fieldset [disabled]="busy() || blocked()">
+      <legend class="text-lg font-semibold">
+        {{
+          context().review
+            ? 'Decisión independiente'
+            : 'Acciones de publicación'
+        }}
+      </legend>
+      <label
+        for="publication-action"
+        class="mt-4 mb-2 block text-sm font-semibold"
+        >Acción de publicación</label
+      ><select
+        id="publication-action"
+        formControlName="action"
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+      >
+        @for (a of actions(); track a.value) {
+          <option [value]="a.value">{{ a.label }}</option>
+        }
+      </select>
+      @if (form.controls.action.value === 'submit') {
+        <p class="mt-3 text-sm text-muted">
+          Se capturará el perfil público actual del animal y sus fotos. Se
+          necesita al menos una fotografía adjunta. El animal debe estar activo.
+        </p>
+      }
+      @if (form.controls.action.value === 'archive') {
+        <p class="mt-3 rounded-xl bg-paper p-4 text-sm">
+          El archivo es definitivo: retira la publicación y cierra sus
+          solicitudes abiertas. El historial se conserva.
+        </p>
+      }
+      @if (form.controls.action.value === 'pause') {
+        <p class="mt-3 text-sm text-muted">
+          Dejará de estar disponible. Reactivarla requiere otro envío y
+          revisión.
+        </p>
+      }
+      <label
+        for="publication-decision-reason"
+        class="mt-4 mb-2 block text-sm font-semibold"
+        >Motivo de la decisión *</label
+      ><textarea
+        id="publication-decision-reason"
+        formControlName="reason"
+        maxlength="500"
+        rows="2"
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+        [attr.aria-invalid]="
+          form.controls.reason.invalid && form.controls.reason.touched
+        "
+      ></textarea>
+      <p class="mt-2 text-xs text-muted">
+        Entre 10 y 500 caracteres, sin datos privados.
+      </p>
+      <label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+        ><input
+          type="checkbox"
+          formControlName="confirm"
+          class="size-5 accent-primary"
+          [attr.aria-invalid]="
+            form.controls.confirm.invalid && form.controls.confirm.touched
+          "
+        />Confirmo la decisión y sus efectos sobre la publicación</label
+      ><button
+        type="submit"
+        class="mt-5 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-strong disabled:opacity-50"
+      >
+        {{ busy() ? 'Registrando…' : 'Registrar decisión' }}
+      </button>
+    </fieldset>
+  </form>
+}

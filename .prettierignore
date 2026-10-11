@@ -14,3 +14,5 @@
 **/dist
 apps/web/next-env.d.ts
 **/.agents/
+
+/packages/api-client/src/generated/

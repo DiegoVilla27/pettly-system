@@ -239,6 +239,34 @@ export class ManagedServicesController {
   ) {
     return M.service(await this.use.preview(p.serviceId, r.principal.userId));
   }
+  @Get('resources/:resourceId/audit')
+  @ApiOperation({
+    operationId: 'listServiceResourceAudit',
+    summary: 'Read immutable resource and calendar revisions',
+    description:
+      'Requires services.manage in the owning organization. Bounded page/limit, newest first. Includes creation, profile/calendar changes, blocking and release. History is preserved; this endpoint grants no booking or customer access.',
+  })
+  @ApiOkResponse({ type: S.ServiceAuditsDto })
+  @ZodSerializerDto(S.ServiceAuditsDto)
+  async resourceAudit(
+    @Param() p: R.ResourceParamsDto,
+    @Query() q: R.PageDto,
+    @Req() r: AuthenticatedRequest,
+  ) {
+    const result = await this.use.resourceAudits(
+      p.resourceId,
+      r.principal.userId,
+      q.page,
+      q.limit,
+    );
+    return {
+      ...result,
+      items: result.items.map((a) => ({
+        ...a,
+        createdAt: a.createdAt.toISOString(),
+      })),
+    };
+  }
   @Get('resources/:resourceId/blocks')
   @ApiOperation({
     operationId: 'listActiveServiceBlocks',

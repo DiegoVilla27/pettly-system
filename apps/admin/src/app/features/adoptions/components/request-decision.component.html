@@ -1,0 +1,85 @@
+@if (actions().length) {
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <fieldset [disabled]="busy() || blocked()">
+      <legend class="text-lg font-semibold">Decisión del refugio</legend>
+      <label for="request-action" class="mt-4 mb-2 block text-sm font-semibold"
+        >Acción de solicitud</label
+      >
+      <select
+        id="request-action"
+        formControlName="action"
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+      >
+        @for (a of actions(); track a.value) {
+          <option [value]="a.value">{{ a.label }}</option>
+        }
+      </select>
+      @if (selectedAction() === 'complete') {
+        <p id="request-effects" class="mt-4 rounded-xl bg-paper p-4 text-sm">
+          Confirma únicamente después de la entrega real. El animal quedará
+          adoptado, la publicación se cerrará y las demás solicitudes abiertas
+          se cerrarán. Esta acción es definitiva.
+        </p>
+      } @else {
+        <p id="request-effects" class="mt-4 text-sm text-muted">
+          Aprobar selecciona al solicitante; no registra la entrega ni cambia el
+          animal a adoptado. Rechazar cierra esta solicitud.
+        </p>
+      }
+      <label for="request-reason" class="mt-4 mb-2 block text-sm font-semibold"
+        >Motivo de la decisión *</label
+      >
+      <textarea
+        id="request-reason"
+        formControlName="reason"
+        maxlength="500"
+        rows="3"
+        aria-describedby="request-reason-help"
+        [attr.aria-invalid]="
+          form.controls.reason.invalid && form.controls.reason.touched
+        "
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+      ></textarea>
+      <p id="request-reason-help" class="mt-2 text-xs text-muted">
+        Entre 10 y 500 caracteres, sin datos personales ni saltos de línea.
+      </p>
+      @if (form.controls.reason.invalid && form.controls.reason.touched) {
+        <p role="alert" class="mt-2 text-sm text-danger">
+          Escribe un motivo válido de 10 a 500 caracteres.
+        </p>
+      }
+      <label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+        ><input
+          type="checkbox"
+          formControlName="confirm"
+          aria-describedby="request-effects"
+          [attr.aria-invalid]="
+            form.controls.confirm.invalid && form.controls.confirm.touched
+          "
+          class="size-5 accent-primary"
+        />{{
+          selectedAction() === 'complete'
+            ? 'Confirmo que el animal ya fue entregado al solicitante aprobado'
+            : 'Confirmo la decisión sobre esta solicitud'
+        }}</label
+      >
+      @if (form.controls.confirm.invalid && form.controls.confirm.touched) {
+        <p role="alert" class="mt-2 text-sm text-danger">
+          Confirma la acción y sus efectos antes de continuar.
+        </p>
+      }
+      <button
+        type="submit"
+        class="mt-5 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-strong disabled:opacity-50"
+      >
+        {{
+          busy()
+            ? 'Registrando…'
+            : selectedAction() === 'complete'
+              ? 'Confirmar entrega'
+              : 'Registrar decisión de solicitud'
+        }}
+      </button>
+    </fieldset>
+  </form>
+}

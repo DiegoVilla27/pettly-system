@@ -47,7 +47,15 @@ const privateService = service.extend({
   createdBy: id,
   reviewedBy: id.nullable(),
   reviewedAt: date.nullable(),
-  reviewReason: z.string().nullable(),
+  reviewReason: z
+    .string()
+    .min(10)
+    .max(500)
+    .regex(/^[^\p{Cc}]+$/u)
+    .nullable()
+    .meta({
+      description: 'Audited publication decision reason; null before review.',
+    }),
 });
 export class ServiceResponseDto extends createZodDto(privateService) {}
 export class PublicServiceDto extends createZodDto(service) {}

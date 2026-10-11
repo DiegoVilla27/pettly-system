@@ -58,6 +58,8 @@ export interface CatalogUseCases {
     actorId: string,
     query: CatalogQuery,
   ): Promise<CatalogPage<ProductState>>;
+  reviewPreview(query: ProductQuery): Promise<ProductDetail>;
+  reviewPhoto(query: ProductQuery, mediaId: string): Promise<Uint8Array>;
   photo(query: ProductQuery, mediaId: string): Promise<Uint8Array>;
   auditList(
     query: ProductQuery,

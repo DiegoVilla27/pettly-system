@@ -1,3 +1,6 @@
+import type { InventoryCatalog } from '../../../catalog/application/ports/in/inventory-catalog';
+import type { InventoryListQuery } from '../queries/inventory.queries';
+import type { HoldState } from '../results/inventory';
 import { ApplicationError } from '../../../../shared/domain/application-error';
 import { administrativeReason } from '../../../../shared/domain/authorization';
 import type {
@@ -27,7 +30,55 @@ export class InventoryHandlers implements InventoryUseCases, OrderStock {
     private readonly auth: Authorization,
     private readonly clock: Clock,
     private readonly entropy: Entropy,
+    private readonly directory: InventoryCatalog,
   ) {}
+  list(query: InventoryListQuery) {
+    return this.repository.run(async (tx) => {
+      await tx.lock(`user:${query.actorId}`);
+      await tx.lock(`organization:${query.organizationId}`);
+      await this.auth.requirePermission(
+        query.actorId,
+        'inventory.manage',
+        query.organizationId,
+      );
+      const page = await this.directory.inventoryVariants(query);
+      for (const id of [...new Set(page.items.map((v) => v.productId))].sort())
+        await tx.lock(`product:${id}`);
+      await tx.lock('catalog:categories');
+      const ids = page.items.map((v) => v.id).sort();
+      for (const id of ids) await tx.lock(`stock:${id}`);
+      const batchNow = this.clock.now();
+      const [balances, holds] = await Promise.all([
+        tx.stocks(ids),
+        tx.dueHolds(ids, batchNow),
+      ]);
+      const byId = new Map(balances.map((s) => [s.variantId, s]));
+      const items = [];
+      for (const variant of page.items) {
+        const stock = Stock.restore(
+          byId.get(variant.id) ??
+            Stock.empty(variant.id, this.clock.now()).snapshot(),
+        );
+        await this.expire(
+          tx,
+          stock,
+          {
+            id: variant.id,
+            productId: variant.productId,
+            organizationId: variant.organizationId,
+            active:
+              variant.variantStatus === 'active' &&
+              variant.productStatus !== 'archived',
+            published: variant.productStatus === 'published',
+          },
+          holds.filter((h) => h.variantId === variant.id),
+          batchNow,
+        );
+        items.push({ ...variant, stock: stock.snapshot() });
+      }
+      return { ...page, items };
+    });
+  }
   private async identity(variantId: string) {
     const variant = (await this.catalog.variants([variantId]))[0];
     if (!variant)
@@ -99,9 +150,11 @@ export class InventoryHandlers implements InventoryUseCases, OrderStock {
     tx: InventoryWork,
     stock: Stock,
     variant: VariantIdentity,
+    knownHolds?: HoldState[],
+    cutoff?: Date,
   ) {
-    const now = this.clock.now();
-    const expired = (await tx.holds(variant.id)).filter(
+    const now = cutoff ?? this.clock.now();
+    const expired = (knownHolds ?? (await tx.holds(variant.id))).filter(
       (h) => h.expiresAt <= now,
     );
     if (!expired.length) return;

@@ -6,7 +6,7 @@ export function config() {
   const smtpPort = Number(process.env.SMTP_PORT || 1025);
   if (!Number.isSafeInteger(smtpPort) || smtpPort <= 0 || smtpPort > 65535)
     throw new Error('SMTP_PORT must be a valid port number.');
-  const webUrl = process.env.WEB_PUBLIC_URL || 'http://localhost:3001';
+  const webUrl = process.env.WEB_PUBLIC_URL || 'http://localhost:4300';
   if (
     process.env.NODE_ENV === 'production' &&
     new URL(webUrl).protocol !== 'https:' &&

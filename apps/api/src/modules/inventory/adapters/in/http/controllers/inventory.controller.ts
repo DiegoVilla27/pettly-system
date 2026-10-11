@@ -36,7 +36,10 @@ import {
   HoldCommand,
   HoldDecisionCommand,
 } from '../../../../application/commands/inventory.commands';
-import { StockQuery } from '../../../../application/queries/inventory.queries';
+import {
+  InventoryListQuery,
+  StockQuery,
+} from '../../../../application/queries/inventory.queries';
 @ApiTags('Inventory')
 @DocumentErrors()
 @Controller('inventory')
@@ -70,6 +73,38 @@ export class InventoryController {
   constructor(
     @Inject(INVENTORY_USE_CASES) private readonly inventory: InventoryUseCases,
   ) {}
+  @Get('variants')
+  @ApiOperation({
+    operationId: 'listManagedInventory',
+    summary: 'List private variant stock by business',
+    description:
+      'Requires inventory.manage in the exact owning active business. Bounded server pagination and case-insensitive SKU/product search; optional active/archived variant filter. Includes historical product states and virtual zero balances. Reads balances and active holds in batches; releases due holds with immutable ledger entries transactionally before returning physical, reserved and available quantities. Versions are advisory until refreshed for a command; no stock reservation guarantee.',
+  })
+  @ApiOkResponse({ type: S.InventoryListResponseDto })
+  @ZodSerializerDto(S.InventoryListResponseDto)
+  async listManagedInventory(
+    @Query() dto: R.InventoryListDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const result = await this.inventory.list(
+      new InventoryListQuery(
+        req.principal.userId,
+        dto.organizationId,
+        dto.page,
+        dto.limit,
+        dto.search,
+        dto.status,
+        dto.variantId,
+      ),
+    );
+    return {
+      ...result,
+      items: result.items.map((item) => ({
+        ...item,
+        stock: Mapper.stock(item.stock),
+      })),
+    };
+  }
   @Get('variants/:variantId')
   @ApiOperation({
     operationId: 'getManagedStock',

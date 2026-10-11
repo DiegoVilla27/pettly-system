@@ -1,3 +1,5 @@
+import type { InventoryListQuery } from '../../queries/inventory.queries';
+import type { InventoryPage } from '../../results/inventory';
 import type {
   StockCommand,
   HoldCommand,
@@ -6,6 +8,7 @@ import type {
 import type { StockQuery } from '../../queries/inventory.queries';
 import type { StockState, HoldState, Movement } from '../../results/inventory';
 export interface InventoryUseCases {
+  list(query: InventoryListQuery): Promise<InventoryPage>;
   change(
     command: StockCommand,
   ): Promise<{ stock: StockState; movement: Movement }>;

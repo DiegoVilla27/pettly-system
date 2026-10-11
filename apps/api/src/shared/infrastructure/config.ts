@@ -20,7 +20,7 @@ export function config() {
   )
     .split(',')
     .map((s) => new URL(s.trim()).origin);
-  const webUrl = process.env.WEB_PUBLIC_URL || 'http://localhost:3001';
+  const webUrl = process.env.WEB_PUBLIC_URL || 'http://localhost:4300';
   if (
     production &&
     new URL(webUrl).protocol !== 'https:' &&

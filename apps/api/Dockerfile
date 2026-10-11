@@ -10,6 +10,7 @@ COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/worker/package.json ./apps/worker/package.json
 COPY packages/notifications-runtime/package.json ./packages/notifications-runtime/package.json
+COPY packages/api-client/package.json ./packages/api-client/package.json
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm exec nx build api --configuration=production && pnpm exec nx build worker

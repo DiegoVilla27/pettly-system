@@ -1,4 +1,8 @@
 import type {
+  InventoryVariantQuery,
+  InventoryVariantPage,
+} from '../in/inventory-catalog';
+import type {
   ProductState,
   VariantState,
   CategoryState,
@@ -7,6 +11,9 @@ import type {
 } from '../../results/catalog';
 import type { CatalogQuery } from '../../queries/catalog.queries';
 export interface CatalogWork {
+  inventoryVariants(
+    query: InventoryVariantQuery,
+  ): Promise<InventoryVariantPage>;
   lock(key: string): Promise<void>;
   category(id: string): Promise<CategoryState | null>;
   categoriesByIds(ids: string[]): Promise<CategoryState[]>;

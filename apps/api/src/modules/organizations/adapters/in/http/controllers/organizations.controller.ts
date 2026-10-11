@@ -416,9 +416,9 @@ export class OrganizationsController {
   @Get(':organizationId/audit')
   @ApiOperation({
     operationId: 'listOrganizationAudit',
-    summary: 'Read immutable organization audit as a super administrator',
+    summary: 'Read immutable audit for an administered organization',
     description:
-      'Bounded pagination of lifecycle and membership decisions, actor/target UUIDs, justification, request correlation and timestamp. Profile values and credentials are never copied into audit events.',
+      'Requires an active verified super_admin or a business_admin/adoption_admin membership in this organization. Operators, applicants without an administrator membership and members of other organizations are denied. Archived history is restricted to super_admin. Bounded pagination of lifecycle and membership decisions, actor/target UUIDs, justification, request correlation and timestamp. Profile values and credentials are never copied into audit events.',
   })
   @ApiOkResponse({ type: OrganizationAuditResponseDto })
   @ZodSerializerDto(OrganizationAuditResponseDto)

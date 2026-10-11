@@ -6,5 +6,6 @@ export class BookingsQuery {
     readonly organizationId?: string,
     readonly status?: string,
     readonly serviceId?: string,
+    readonly search?: string,
   ) {}
 }

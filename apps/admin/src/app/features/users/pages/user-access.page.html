@@ -1,0 +1,306 @@
+<app-problem [problem]="store.problem()" /> @if(store.success()){
+<p role="status" class="mb-5 rounded-xl bg-sage p-4 text-sm text-primary">
+  {{ store.success() }}
+</p>
+} @if(store.loading()){
+<p role="status" class="py-8 text-muted">Cargando acceso…</p>
+} @else if(store.user();as user){
+<app-user-heading [user]="user" />
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="global-role-heading"
+>
+  <h2 id="global-role-heading" class="text-xl font-semibold">Rol global</h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Actual: <strong>{{ user.roleLabel }}</strong>. Cambiarlo cerrará todas las
+    sesiones de la cuenta. El último superadministrador activo está protegido.
+  </p>
+  @if(eligible()){
+  <form
+    [formGroup]="roleForm"
+    (ngSubmit)="setRole()"
+    class="mt-6 space-y-4"
+    novalidate
+  >
+    <fieldset [disabled]="store.busy()" class="space-y-4">
+      <div>
+        <label for="global-role" class="mb-2 block text-sm font-semibold"
+          >Nuevo rol global</label
+        ><select
+          id="global-role"
+          formControlName="role"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-4"
+        >
+          <option value="user">Usuario</option>
+          <option value="moderator">Moderador</option>
+          <option value="super_admin">Superadministrador</option>
+        </select>
+      </div>
+      <div>
+        <label for="global-role-reason" class="mb-2 block text-sm font-semibold"
+          >Motivo del cambio de rol</label
+        ><textarea
+          id="global-role-reason"
+          formControlName="reason"
+          rows="2"
+          maxlength="500"
+          [readOnly]="store.busy()"
+          [attr.aria-invalid]="roleForm.controls.reason.invalid && roleForm.controls.reason.touched"
+          aria-describedby="global-role-help"
+          class="w-full rounded-xl border border-line px-4 py-3"
+        ></textarea>
+        <p id="global-role-help" class="mt-2 text-xs text-muted">
+          10–500 caracteres, una sola línea. No incluyas datos personales
+          innecesarios.
+        </p>
+        @if(roleForm.controls.reason.invalid &&
+        roleForm.controls.reason.touched){
+        <p class="mt-2 text-sm text-danger">Escribe un motivo válido.</p>
+        }
+      </div>
+      <button
+        type="submit"
+        [disabled]="store.busy() || roleForm.controls.role.value === user.globalRole"
+        class="min-h-11 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        Confirmar cambio de rol
+      </button>
+    </fieldset>
+  </form>
+  }@else{
+  <p class="mt-5 rounded-xl bg-paper p-4 text-sm text-muted">
+    La cuenta debe estar activa y tener el correo verificado para asignarle
+    roles.
+  </p>
+  }
+</section>
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="memberships-heading"
+>
+  <h2 id="memberships-heading" class="text-xl font-semibold">
+    Empresas y refugios
+  </h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Cada membresía pertenece a una organización. Los permisos operativos se
+    habilitan cuando la organización está activa.
+  </p>
+  <ul class="mt-6 space-y-4">
+    @for(membership of store.access()?.organizations ?? [];track
+    membership.organizationId){
+    <li class="rounded-2xl border border-line p-5">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h3 class="font-semibold">{{ membership.name }}</h3>
+          <p class="mt-2 text-sm text-muted">
+            {{ roleLabel(membership.role) }}
+          </p>
+          <p class="mt-2 text-xs text-muted">
+            {{ membership.status === 'active' ? 'Organización activa' :
+            'Permisos operativos no disponibles' }}
+          </p>
+        </div>
+        <button
+          type="button"
+          [disabled]="store.busy()"
+          (click)="chooseRemoval(membership)"
+          class="min-h-11 rounded-xl border border-line px-4 text-sm text-danger"
+        >
+          Retirar membresía de {{ membership.name }}
+        </button>
+      </div>
+    </li>
+    }@empty{
+    <li class="rounded-xl bg-paper p-5 text-sm text-muted">
+      No tiene membresías asignadas.
+    </li>
+    }
+  </ul>
+  @if(removing();as membership){
+  <form
+    [formGroup]="removalForm"
+    (ngSubmit)="remove()"
+    class="mt-6 rounded-2xl border border-danger bg-danger-soft p-5"
+    novalidate
+  >
+    <fieldset [disabled]="store.busy()" class="space-y-4">
+      <h3 class="font-semibold">Retirar acceso a {{ membership.name }}</h3>
+      <p class="mt-3 text-sm">
+        No cambia el rol global ni otras membresías. Si es el responsable de la
+        organización, primero se debe transferir esa responsabilidad.
+      </p>
+      <label
+        for="remove-membership-reason"
+        class="mt-5 mb-2 block text-sm font-semibold"
+        >Motivo de retirada</label
+      ><textarea
+        id="remove-membership-reason"
+        formControlName="reason"
+        rows="2"
+        maxlength="500"
+        aria-describedby="remove-membership-help"
+        [attr.aria-invalid]="removalForm.controls.reason.invalid && removalForm.controls.reason.touched"
+        class="w-full rounded-xl border border-line bg-white px-4 py-3"
+      ></textarea>
+      <p id="remove-membership-help" class="mt-2 text-xs">
+        10–500 caracteres, una sola línea.
+      </p>
+      @if(removalForm.controls.reason.invalid &&
+      removalForm.controls.reason.touched){
+      <p class="mt-2 text-sm text-danger">Escribe un motivo válido.</p>
+      }
+      <div class="mt-4 flex flex-wrap gap-3">
+        <button
+          type="submit"
+          [disabled]="store.busy()"
+          class="min-h-11 rounded-xl border border-danger px-4 text-sm font-semibold text-danger"
+        >
+          Confirmar retirada</button
+        ><button
+          type="button"
+          (click)="removing.set(null)"
+          class="min-h-11 rounded-xl border border-line bg-white px-4 text-sm"
+        >
+          Cancelar
+        </button>
+      </div>
+    </fieldset>
+  </form>
+  }
+</section>
+@if(eligible()){
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="assign-heading"
+>
+  <h2 id="assign-heading" class="text-xl font-semibold">
+    Asignar o cambiar membresía
+  </h2>
+  <form
+    [formGroup]="searchForm"
+    (ngSubmit)="find()"
+    class="mt-5 flex flex-wrap items-end gap-3"
+  >
+    <div class="min-w-0 flex-1">
+      <label for="organization-search" class="mb-2 block text-sm font-semibold"
+        >Buscar empresa o refugio</label
+      ><input
+        id="organization-search"
+        type="search"
+        formControlName="search"
+        maxlength="100"
+        [attr.aria-invalid]="searchForm.controls.search.invalid && searchForm.controls.search.touched"
+        class="min-h-12 w-full rounded-xl border border-line px-4"
+      />
+    </div>
+    <button
+      type="submit"
+      class="min-h-12 rounded-xl border border-line px-5 text-sm font-semibold"
+    >
+      Buscar organización
+    </button>
+  </form>
+  <div class="mt-4">
+    <app-problem [problem]="store.organizationsProblem()" />
+  </div>
+  @if(store.organizationsLoading()){
+  <p role="status" class="mt-5 text-sm text-muted">Buscando organizaciones…</p>
+  } @if(store.organizations();as page){
+  <fieldset class="mt-5">
+    <legend class="mb-3 text-sm font-semibold">
+      Selecciona la organización
+    </legend>
+    <div class="space-y-2">
+      @for(org of page.items;track org.id){<label
+        class="flex min-h-12 items-center gap-3 rounded-xl border border-line p-4"
+        ><input
+          type="radio"
+          [attr.aria-label]="org.name + ', ' + (org.type === 'business' ? 'Empresa' : 'Refugio') + (org.status === 'deleted' ? ', Archivada' : '')"
+          name="selected-organization"
+          [checked]="selected()?.id === org.id"
+          [disabled]="org.status === 'deleted' || store.busy()"
+          (change)="select(org)"
+          [value]="org.id"
+        /><span class="text-sm"
+          ><span class="font-semibold">{{ org.name }}</span
+          ><span class="ms-2 text-muted"
+            >{{ org.type === 'business' ? 'Empresa' : 'Refugio' }}{{ org.status
+            === 'deleted' ? ' · Archivada' : '' }}</span
+          ></span
+        ></label
+      >}@empty{
+      <p class="text-sm text-muted">
+        No encontramos organizaciones. Prueba otra búsqueda.
+      </p>
+      }
+    </div>
+  </fieldset>
+  <app-pagination
+    [page]="page.page"
+    [total]="page.total"
+    [limit]="page.limit"
+    (pageChange)="find($event)"
+  />} @if(selected();as org){
+  <form
+    [formGroup]="membershipForm"
+    (ngSubmit)="assign()"
+    novalidate
+    class="mt-6 space-y-4 rounded-2xl bg-paper p-5"
+  >
+    <fieldset [disabled]="store.busy()" class="space-y-4">
+      <h3 class="font-semibold">{{ org.name }}</h3>
+      <p class="text-sm text-muted">
+        El rol se aplicará únicamente a esta {{ org.type === 'business' ?
+        'empresa' : 'entidad de adopción' }}.
+      </p>
+      <div>
+        <label for="membership-role" class="mb-2 block text-sm font-semibold"
+          >Rol de membresía</label
+        ><select
+          id="membership-role"
+          formControlName="role"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-4"
+        >
+          @for(role of allowedMembershipRoles();track role.value){
+          <option [value]="role.value">{{ role.label }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="membership-reason" class="mb-2 block text-sm font-semibold"
+          >Motivo de asignación</label
+        ><textarea
+          id="membership-reason"
+          formControlName="reason"
+          rows="2"
+          maxlength="500"
+          [attr.aria-invalid]="membershipForm.controls.reason.invalid && membershipForm.controls.reason.touched"
+          aria-describedby="membership-help"
+          class="w-full rounded-xl border border-line bg-white px-4 py-3"
+        ></textarea>
+        <p id="membership-help" class="mt-2 text-xs text-muted">
+          10–500 caracteres, una sola línea.
+        </p>
+        @if(membershipForm.controls.reason.invalid &&
+        membershipForm.controls.reason.touched){
+        <p class="mt-2 text-sm text-danger">Escribe un motivo válido.</p>
+        }
+      </div>
+      <button
+        type="submit"
+        [disabled]="store.busy()"
+        class="min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        Guardar membresía
+      </button>
+    </fieldset>
+  </form>
+  }
+</section>
+} }@else if(!store.loading()){
+<h1 class="text-2xl font-semibold">No pudimos cargar el acceso</h1>
+<a
+  routerLink="/usuarios"
+  class="mt-4 inline-flex min-h-11 items-center text-primary"
+  >Volver a usuarios</a
+>}

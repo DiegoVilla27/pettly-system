@@ -23,7 +23,7 @@ const payment = z.strictObject({
   buyerId: id,
   organizationId: id,
   provider: z.string(),
-  reference: z.string().nullable(),
+  reference: z.string().max(200).nullable(),
   checkoutUrl: z.url().nullable().meta({
     description:
       'Null until a configured provider creates a checkout. Never a locally simulated payment URL.',

@@ -22,4 +22,76 @@ const ids = Object.values(spec.paths).flatMap((methods) =>
 );
 if (new Set(ids).size !== ids.length)
   throw new Error('Duplicate OpenAPI operationId.');
+// Unconstrained nullable strings can become arrays during Swagger DTO reflection.
+// Keep these frontend-consumed contracts aligned with their actual JSON values.
+const organization =
+  spec.components.schemas.OrganizationProfileResponseDto.properties;
+for (const field of [
+  'legalName',
+  'registrationNumber',
+  'description',
+  'phone',
+  'countryCode',
+  'region',
+  'city',
+  'address',
+  'addressLine2',
+  'postalCode',
+  'reviewReason',
+]) {
+  if (
+    organization[field]?.type !== 'string' ||
+    organization[field]?.nullable !== true
+  )
+    throw new Error(
+      `OrganizationProfileResponseDto.${field} must be nullable text.`,
+    );
+}
+const audit =
+  spec.components.schemas.OrganizationAuditResponseDto.properties.items.items
+    .properties;
+for (const field of ['previousValue', 'nextValue']) {
+  if (audit[field]?.type !== 'string' || audit[field]?.nullable !== true)
+    throw new Error(
+      `OrganizationAuditResponseDto.${field} must be nullable text.`,
+    );
+}
+const veterinaryReference =
+  spec.components.schemas.CredentialResponseDto.properties
+    .verificationReference;
+if (
+  veterinaryReference?.type !== 'string' ||
+  veterinaryReference?.nullable !== true
+)
+  throw new Error(
+    'CredentialResponseDto.verificationReference must be nullable text.',
+  );
+for (const [name, field] of [
+  ['CategoryResponseDto', 'description'],
+  ['ProductResponseDto', 'brand'],
+  ['ProductResponseDto', 'reviewReason'],
+  ['ServiceResponseDto', 'reviewReason'],
+  ['PaymentResponseDto', 'reference'],
+]) {
+  const property = spec.components.schemas[name].properties[field];
+  if (property?.type !== 'string' || property?.nullable !== true)
+    throw new Error(`${name}.${field} must be nullable text.`);
+}
+for (const name of ['AnimalResponseDto', 'AnimalDetailDto']) {
+  for (const field of ['vaccinated', 'neutered']) {
+    const property = spec.components.schemas[name].properties[field];
+    if (property?.type !== 'boolean' || property?.nullable !== true)
+      throw new Error(`${name}.${field} must be nullable boolean.`);
+  }
+}
 console.log(`OpenAPI generated and checked: ${ids.length} operations.`);
+
+for (const name of [
+  'PublicationResponseDto',
+  'AdoptionRequestResponseDto',
+  'AdoptionRequestDetailDto',
+]) {
+  const field = spec.components.schemas[name].properties.reviewReason;
+  if (field.type !== 'string' || field.nullable !== true)
+    throw new Error(`Invalid nullable adoption review reason: ${name}`);
+}

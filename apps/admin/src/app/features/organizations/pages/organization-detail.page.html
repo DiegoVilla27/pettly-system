@@ -1,0 +1,111 @@
+<app-problem [problem]="store.problem()" />@if(store.loading()){
+<p role="status" class="py-8 text-muted">Cargando organización…</p>
+}@else if(store.organization();as org){<app-organization-heading
+  [organization]="org"
+/>
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="org-information"
+>
+  <h2 id="org-information" class="text-xl font-semibold">
+    Información de la organización
+  </h2>
+  <dl class="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+    @for(field of profile();track field.label){
+    <div class="min-w-0">
+      <dt class="text-xs font-medium text-muted">{{field.label}}</dt>
+      <dd class="mt-2 text-sm font-semibold break-words">
+        {{field.value??'Sin especificar'}}
+      </dd>
+    </div>
+    }
+  </dl>
+  <p class="mt-6 text-xs break-all text-muted">ID: {{org.id}}</p>
+  <p class="mt-3 text-xs text-muted">
+    Creada {{org.createdAt|date:'dd/MM/yyyy HH:mm'}} · Actualizada
+    {{org.updatedAt|date:'dd/MM/yyyy HH:mm'}}
+  </p>
+</section>
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="org-responsibility"
+>
+  <h2 id="org-responsibility" class="text-xl font-semibold">
+    Solicitud y responsabilidad
+  </h2>
+  <dl class="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+    <div>
+      <dt class="text-xs font-medium text-muted">Solicitante</dt>
+      <dd class="mt-2 text-sm break-all">
+        @if(org.applicantId){<a
+          [routerLink]="['/usuarios',org.applicantId]"
+          class="text-primary underline underline-offset-4"
+          >Ver cuenta {{org.applicantId}}</a
+        >}@else{Creación administrativa, sin solicitante.}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium text-muted">Responsable</dt>
+      <dd class="mt-2 text-sm break-all">
+        @if(org.responsibleUserId){<a
+          [routerLink]="['/usuarios',org.responsibleUserId]"
+          class="text-primary underline underline-offset-4"
+          >Ver cuenta {{org.responsibleUserId}}</a
+        >}@else{Pendiente de asignar al aprobar.}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium text-muted">Enviada a revisión</dt>
+      <dd class="mt-2 text-sm">
+        {{org.submittedAt?(org.submittedAt|date:'dd/MM/yyyy HH:mm'):'Sin
+        enviar'}}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium text-muted">Última decisión</dt>
+      <dd class="mt-2 text-sm">
+        {{org.reviewedAt?(org.reviewedAt|date:'dd/MM/yyyy HH:mm'):'Sin
+        decisión'}}
+        <p class="mt-2 break-words text-muted">
+          {{org.reviewReason??'Sin motivo registrado'}}
+        </p>
+      </dd>
+    </div>
+  </dl>
+  @if(org.reviewedBy){
+  <p class="mt-6 text-xs break-all text-muted">Revisor: {{org.reviewedBy}}</p>
+  }
+  <p class="mt-5 text-sm leading-relaxed text-muted">
+    Solo las organizaciones activas habilitan permisos operativos. La aprobación
+    en Pettly no certifica licencias ni acreditaciones profesionales.
+  </p>
+</section>
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="org-documents"
+>
+  <h2 id="org-documents" class="text-xl font-semibold">Documentos legales</h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    La carga y consulta de documentos legales todavía no está habilitada. La
+    revisión actual se basa en los datos del perfil y queda registrada con su
+    justificación. Las acreditaciones veterinarias tienen un proceso separado.
+  </p>
+</section>
+@if(org.status!=='deleted'){<a
+  [routerLink]="['revision']"
+  class="mt-7 inline-flex min-h-12 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-white"
+  >Gestionar revisión y estado</a
+>}@else{
+<p class="mt-7 rounded-xl bg-paper p-5 text-sm text-muted">
+  Esta organización está archivada y anonimizada. No puede editarse ni
+  reactivarse.
+</p>
+} }@else{
+<h1 class="text-2xl font-semibold">No pudimos cargar la organización</h1>
+<button
+  type="button"
+  (click)="store.load(organizationId())"
+  class="mt-4 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar</button
+>}

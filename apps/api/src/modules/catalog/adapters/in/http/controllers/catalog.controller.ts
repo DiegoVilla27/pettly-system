@@ -467,19 +467,65 @@ export class CatalogController {
     operationId: 'listProductModerationQueue',
     summary: 'List products awaiting moderation',
     description:
-      'Requires global moderator/super_admin. Bounded pagination; pending product metadata only, without private organization profile or stock balances. Current eligibility is rechecked at review.',
+      'Requires global moderator/super_admin. Bounded pagination and search/category/business/currency/price filters; pending product metadata only, without private organization profile or stock balances. Current eligibility is rechecked at review.',
   })
   @ApiOkResponse({ type: S.ModerationProductsResponseDto })
   @ZodSerializerDto(S.ModerationProductsResponseDto)
   async listProductModerationQueue(
-    @Query() dto: R.CatalogPaginationDto,
+    @Query() dto: R.PublicCatalogQueryDto,
     @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.catalog.moderation(
       req.principal.userId,
-      new CatalogQuery(dto.page, dto.limit),
+      query(dto),
     );
     return { ...result, items: result.items.map(Mapper.product) };
+  }
+  @Get('moderation/products/:productId')
+  @ApiOperation({
+    operationId: 'getProductReviewPreview',
+    summary: 'Read a pending product and its variants for independent review',
+    description:
+      'Global moderator/superadmin, excluding creator and all owning business members. Current pending product and active business required; includes bounded variants and photo references, without stock or private company profile. Rechecked on every read; no-store.',
+  })
+  @ApiOkResponse({ type: S.PrivateProductDetailDto })
+  @ZodSerializerDto(S.PrivateProductDetailDto)
+  async reviewPreview(
+    @Param() p: R.ProductParamsDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return Mapper.detail(
+      await this.catalog.reviewPreview(
+        new ProductQuery(p.productId, req.principal.userId),
+      ),
+      true,
+    );
+  }
+  @Get('moderation/products/:productId/photos/:mediaId')
+  @ApiOperation({
+    operationId: 'getProductReviewPhoto',
+    summary: 'Read a sanitized photo during independent product review',
+    description:
+      'Independent global moderator/superadmin only, excluding creator/business members. Current pending product, active business and exact attachment required. Authenticated JPEG bytes and no-store; no storage paths or originals.',
+  })
+  @ApiOkResponse({
+    content: { 'image/jpeg': { schema: { type: 'string', format: 'binary' } } },
+  })
+  async reviewPhoto(
+    @Param() p: R.ProductPhotoParamsDto,
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.setHeader('Cache-Control', 'no-store');
+    return new StreamableFile(
+      Buffer.from(
+        await this.catalog.reviewPhoto(
+          new ProductQuery(p.productId, req.principal.userId),
+          p.mediaId,
+        ),
+      ),
+      { type: 'image/jpeg' },
+    );
   }
   @Post('products/:productId/variants')
   @ApiOperation({

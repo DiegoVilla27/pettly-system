@@ -1,0 +1,139 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <fieldset [disabled]="busy() || blocked()">
+    <legend class="text-lg font-semibold">
+      {{ variant() ? 'Editar variante' : 'Añadir variante' }}
+    </legend>
+    <p class="mt-3 text-sm text-muted">
+      El SKU es único en toda la empresa. Las variantes archivadas conservan su
+      SKU. Cambiar una variante publicada requiere nueva revisión.
+    </p>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="variant-sku" class="mb-2 block text-sm font-semibold"
+          >SKU *</label
+        ><input
+          id="variant-sku"
+          formControlName="sku"
+          maxlength="64"
+          [attr.aria-invalid]="
+            form.controls.sku.invalid && form.controls.sku.touched
+          "
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        />
+      </div>
+      <div>
+        <label for="variant-price" class="mb-2 block text-sm font-semibold"
+          >Precio en COP *</label
+        ><input
+          id="variant-price"
+          formControlName="price"
+          inputmode="decimal"
+          maxlength="12"
+          aria-describedby="variant-price-help"
+          [attr.aria-invalid]="
+            form.controls.price.invalid && form.controls.price.touched
+          "
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        />
+        <p id="variant-price-help" class="mt-2 text-xs text-muted">
+          Sin separadores de miles. Hasta dos decimales, por ejemplo 19999,95.
+        </p>
+      </div>
+    </div>
+    <h3 class="mt-5 font-semibold">Atributos de la variante</h3>
+    <p class="mt-2 text-xs text-muted">
+      Hasta diez opciones, por ejemplo clave «talla» y valor «M».
+    </p>
+    <div formArrayName="attributes">
+      @for (row of rows(); track row; let i = $index) {
+        <div
+          [formGroupName]="i"
+          class="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+        >
+          <div>
+            <label
+              [for]="'variant-key-' + i"
+              class="mb-2 block text-sm font-semibold"
+              >Clave {{ i + 1 }}</label
+            ><input
+              [id]="'variant-key-' + i"
+              formControlName="key"
+              maxlength="30"
+              [attr.aria-invalid]="
+                row.controls.key.invalid && row.controls.key.touched
+              "
+              class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+            />
+          </div>
+          <div>
+            <label
+              [for]="'variant-value-' + i"
+              class="mb-2 block text-sm font-semibold"
+              >Valor {{ i + 1 }}</label
+            ><input
+              [id]="'variant-value-' + i"
+              formControlName="value"
+              maxlength="80"
+              [attr.aria-invalid]="
+                row.controls.value.invalid && row.controls.value.touched
+              "
+              class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+            />
+          </div>
+          <button
+            type="button"
+            (click)="remove(i)"
+            [attr.aria-label]="'Quitar atributo ' + (i + 1)"
+            class="min-h-11 self-end rounded-xl border border-line px-4 text-sm"
+          >
+            Quitar
+          </button>
+        </div>
+      }
+    </div>
+    <button
+      type="button"
+      (click)="add()"
+      [disabled]="rows().length >= 10"
+      class="mt-4 min-h-11 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-50"
+    >
+      Añadir atributo</button
+    ><label for="variant-reason" class="mt-5 mb-2 block text-sm font-semibold"
+      >Motivo de la variante *</label
+    ><textarea
+      id="variant-reason"
+      formControlName="reason"
+      maxlength="500"
+      rows="2"
+      [attr.aria-invalid]="
+        form.controls.reason.invalid && form.controls.reason.touched
+      "
+      class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+    ></textarea
+    ><label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+      ><input
+        type="checkbox"
+        formControlName="confirm"
+        [attr.aria-invalid]="
+          form.controls.confirm.invalid && form.controls.confirm.touched
+        "
+        class="size-5 accent-primary"
+      />Confirmo los datos y el precio de la variante</label
+    >
+    @if (error()) {
+      <p role="alert" class="mt-4 text-sm text-danger">{{ error() }}</p>
+    }
+    <button
+      type="submit"
+      class="mt-5 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white disabled:opacity-50"
+    >
+      {{
+        busy()
+          ? 'Guardando…'
+          : variant()
+            ? 'Guardar variante'
+            : 'Crear variante'
+      }}
+    </button>
+  </fieldset>
+</form>

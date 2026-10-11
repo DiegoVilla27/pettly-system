@@ -32,7 +32,7 @@ const credential = z.strictObject({
   reviewedBy: id.nullable(),
   reviewedAt: date.nullable(),
   verifiedUntil: date.nullable(),
-  verificationReference: z.string().nullable(),
+  verificationReference: z.string().max(500).nullable(),
   createdAt: date,
   updatedAt: date,
 });
@@ -63,5 +63,28 @@ export class CredentialAuditsDto extends createZodDto(
       )
       .max(50),
     total: z.number().int().nonnegative(),
+  }),
+) {}
+
+export class EligibleCredentialsResponseDto extends createZodDto(
+  z.strictObject({
+    items: z
+      .array(
+        z.strictObject({
+          id,
+          organizationId: id,
+          professionalId: id,
+          professionalName: z.string().min(2).max(200),
+          resourceId: id,
+          verifiedUntil: date,
+        }),
+      )
+      .max(50),
+    candidateTotal: z.number().int().nonnegative().meta({
+      description:
+        'Number of approved, unexpired candidates before current professional/resource eligibility filtering. Items may be fewer; continue pagination to inspect subsequent candidate pages.',
+    }),
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
   }),
 ) {}

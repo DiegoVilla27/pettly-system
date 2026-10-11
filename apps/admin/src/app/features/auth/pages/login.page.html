@@ -1,0 +1,135 @@
+<div class="min-h-dvh bg-paper lg:grid lg:grid-cols-2">
+  <section
+    class="relative flex flex-col bg-sage px-6 py-8 sm:px-12 lg:min-h-dvh lg:px-16 lg:py-12"
+    aria-label="Pettly"
+  >
+    <app-brand />
+    <div class="my-auto max-w-lg pt-8 pb-2 sm:py-12 lg:py-16">
+      <span
+        class="mb-6 hidden items-center gap-2 rounded-full border border-primary/15 bg-white/60 px-4 py-2 text-xs font-semibold text-primary sm:inline-flex"
+        ><span class="size-1.5 rounded-full bg-primary"></span> Un lugar para
+        hacer el bien</span
+      >
+      <h1
+        class="text-3xl leading-tight font-semibold tracking-tight text-balance text-ink sm:text-5xl"
+      >
+        Cuidar de ellos.<br /><span class="text-primary"
+          >Conectar contigo.</span
+        >
+      </h1>
+      <p
+        class="mt-6 hidden max-w-md text-lg leading-relaxed text-pretty text-muted lg:block"
+      >
+        Detrás de cada cuidado hay personas como tú. Este es tu espacio para
+        acompañar, organizar y hacer crecer Pettly.
+      </p>
+      <div class="mt-12 hidden items-center gap-5 lg:flex" aria-hidden="true">
+        <svg
+          width="230"
+          height="190"
+          viewBox="0 0 230 190"
+          fill="none"
+          focusable="false"
+        >
+          <ellipse
+            cx="114"
+            cy="171"
+            rx="90"
+            ry="8"
+            fill="currentColor"
+            class="text-primary/10"
+          />
+          <path
+            d="M35 142c-7-44 10-91 59-105 40-12 91 3 105 46 13 41-8 80-61 84-47 4-91 0-103-25Z"
+            fill="currentColor"
+            class="text-primary/10"
+          />
+          <path
+            d="M69 122 48 59c-3-11 0-19 10-17l40 29m61 50 19-63c3-11-1-18-11-15l-34 27"
+            fill="currentColor"
+            class="text-primary"
+          />
+          <path
+            d="M68 88c0-32 100-32 100 0v48c0 45-100 45-100 0V88Z"
+            fill="currentColor"
+            class="text-primary"
+          />
+          <ellipse cx="96" cy="110" rx="4" ry="5" fill="white" />
+          <ellipse cx="141" cy="110" rx="4" ry="5" fill="white" />
+          <path
+            d="m114 125 5 4 5-4m-5 4v9m-12-1c4 7 8 7 12 1 4 6 8 6 12-1"
+            stroke="white"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M194 25c-7-10-22-4-20 6 2 12 18 19 18 19s17-8 17-20c0-10-11-14-15-5Z"
+            fill="currentColor"
+            class="text-clay"
+          />
+          <path
+            d="m39 17 4 9 10 2-9 5-1 10-5-9-10-1 9-6 2-10Z"
+            fill="currentColor"
+            class="text-primary/40"
+          />
+        </svg>
+        <p class="max-w-36 text-sm leading-relaxed text-primary">
+          Pequeños gestos.<br /><span class="font-semibold"
+            >Grandes huellas.</span
+          >
+        </p>
+      </div>
+    </div>
+    <p class="hidden text-xs text-muted lg:block">
+      Hecho para quienes cuidan. Pensado para Colombia.
+    </p>
+  </section>
+  <main
+    id="main-content"
+    tabindex="-1"
+    class="flex min-w-0 flex-col justify-center px-6 py-12 sm:px-12 lg:px-16"
+  >
+    <div class="mx-auto w-full max-w-sm">
+      <span class="text-xs font-semibold tracking-widest text-primary uppercase"
+        >Tu espacio de trabajo</span
+      >
+      <h2 class="mt-3 text-3xl font-semibold tracking-tight">
+        Qué bueno verte.
+      </h2>
+      <p class="mt-3 mb-9 leading-relaxed text-muted">
+        Entra a tu cuenta para continuar donde lo dejaste.
+      </p>
+      <app-login-form
+        [busy]="session.busy()"
+        [problem]="problem()"
+        (credentials)="submit($event)"
+      />
+      @if (session.state().phase === 'unavailable') {
+      <button
+        type="button"
+        class="mt-4 min-h-11 w-full rounded-xl border border-line px-4 py-3 font-medium text-primary"
+        [disabled]="session.busy()"
+        (click)="retry()"
+      >
+        Reintentar conexión
+      </button>
+      }
+      <a
+        routerLink="/forgot-password"
+        class="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-primary"
+        >Olvidé mi contraseña</a
+      >
+      <p class="mt-8 text-center text-sm leading-relaxed text-muted">
+        ¿Necesitas ayuda para acceder?<br /><span class="font-medium text-ink"
+          >Contacta al administrador de tu cuenta.</span
+        >
+      </p>
+      <div
+        class="mt-10 flex items-center justify-center gap-2 border-t border-line pt-6 text-xs text-muted"
+      >
+        <app-icon name="lock" /> Tu cuenta, en un espacio seguro.
+      </div>
+    </div>
+  </main>
+</div>

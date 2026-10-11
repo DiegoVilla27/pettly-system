@@ -1,10 +1,15 @@
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
-
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { NavigationFocus } from './core/layout/navigation-focus.service';
 @Component({
-  imports: [RouterModule],
+  imports: [RouterOutlet],
   selector: 'app-root',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
-  styleUrl: './app.css',
 })
-export class App {}
+export class App {
+  private readonly focus = inject(NavigationFocus);
+  constructor() {
+    void this.focus;
+  }
+}

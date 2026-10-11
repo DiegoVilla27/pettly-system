@@ -1,0 +1,132 @@
+<p class="text-xs font-semibold tracking-widest text-primary uppercase">
+  Mi espacio
+</p>
+<h1 class="mt-3 text-3xl font-semibold tracking-tight">Mi cuenta</h1>
+<p class="mt-4 leading-relaxed text-muted">
+  Tu identidad y los equipos que forman parte de tu acceso.
+</p>
+@if (session.identity(); as identity) {
+<section
+  class="mt-9 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="profile-title"
+>
+  <div class="flex items-center gap-4">
+    <span
+      class="flex size-14 items-center justify-center rounded-2xl bg-sage text-xl font-semibold text-primary"
+      aria-hidden="true"
+      >{{ identity.initials }}</span
+    >
+    <div>
+      <h2 id="profile-title" class="text-xl font-semibold">
+        {{ identity.fullName }}
+      </h2>
+      <p class="mt-1 text-sm text-muted">{{ identity.roleLabel }}</p>
+    </div>
+  </div>
+  <dl class="mt-8 grid gap-6 border-t border-line pt-7 sm:grid-cols-2">
+    <div>
+      <dt class="text-xs font-medium text-muted">Correo electrónico</dt>
+      <dd class="mt-2 text-sm font-semibold break-all">{{ identity.email }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium text-muted">Estado de la cuenta</dt>
+      <dd
+        class="mt-2 flex items-center gap-2 text-sm font-semibold text-primary"
+      >
+        <app-icon name="check" />Activa y verificada
+      </dd>
+    </div>
+  </dl>
+</section>
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="teams-title"
+>
+  <h2 id="teams-title" class="text-lg font-semibold">Mis equipos</h2>
+  @for (organization of identity.organizations; track
+  organization.organizationId) {
+  <div
+    class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5"
+  >
+    <div>
+      <p class="font-medium">{{ organization.name }}</p>
+      <p class="mt-1 text-sm text-muted">
+        {{ organization.type === 'business' ? 'Empresa' : 'Refugio o entidad de
+        adopción' }}
+      </p>
+    </div>
+    <span class="rounded-full bg-paper px-3 py-2 text-xs text-muted"
+      >{{ organization.status === 'active' ? 'Activo' : 'Acceso operativo no
+      habilitado' }}</span
+    >
+  </div>
+  } @empty {
+  <div class="mt-5 rounded-2xl bg-paper p-5">
+    <p class="text-sm leading-relaxed text-muted">
+      No tienes membresías de equipo asignadas.@if (identity.role ===
+      'super_admin') { Tu administración global funciona sin pertenecer a una
+      empresa o refugio. }
+    </p>
+  </div>
+  }
+</section>
+<div
+  class="mt-6 flex items-start gap-3 rounded-2xl bg-sage p-5 text-sm leading-relaxed text-primary"
+>
+  <app-icon name="lock" />
+  <p>
+    Si tu rol o membresía cambia, también cambia tu acceso. Para cerrar tu
+    sesión actual, utiliza <strong>Salir</strong>.
+  </p>
+</div>
+}
+
+<app-problem [problem]="store.problem()" />@if(store.loading()){
+<p role="status" class="mt-5">Consultando perfil y sesiones…</p>
+}@if(store.success()){
+<p role="status" class="mt-5 rounded-xl bg-sage p-4 text-sm">
+  {{store.success()}}
+</p>
+}<button
+  type="button"
+  (click)="store.load(page())"
+  [disabled]="store.busy()||store.loading()"
+  class="mt-5 min-h-11 rounded-xl border border-line px-4"
+>
+  Actualizar mi cuenta
+</button>
+@if(store.profile();as profile){
+<section class="mt-6 rounded-2xl border border-line bg-white p-5">
+  <app-own-profile-editor
+    [user]="profile"
+    [busy]="store.busy()||store.refreshRequired()"
+    (update)="store.execute({kind:'profile',body:$event})"
+  />
+</section>
+<section class="mt-6 rounded-2xl border border-line bg-white p-5">
+  <h2 class="text-lg font-semibold">Sesiones activas</h2>
+  <ul class="mt-4 space-y-3" aria-label="Mis sesiones activas">
+    @for(s of store.sessions()?.items??[];track s.id){
+    <li class="rounded-xl border border-line p-3">
+      <p>{{s.current?'Sesión actual':'Otra sesión'}}</p>
+      <p class="mt-2 text-xs break-all">
+        Creada {{s.createdAt}} · vence {{s.expiresAt}}
+      </p>
+    </li>
+    }
+  </ul>
+  @if(store.sessions();as sessions){<app-pagination
+    [page]="sessions.page"
+    [total]="sessions.total"
+    [limit]="sessions.limit"
+    (pageChange)="page.set($event)"
+  />}
+  <div class="mt-5">
+    <app-account-security
+      [sessions]="store.sessions()"
+      [blocked]="store.busy()||store.refreshRequired()"
+      (submitted)="store.execute($event)"
+    />
+  </div>
+</section>
+}

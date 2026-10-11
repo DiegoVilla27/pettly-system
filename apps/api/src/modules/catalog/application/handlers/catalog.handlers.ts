@@ -1,3 +1,7 @@
+import type {
+  InventoryCatalog,
+  InventoryVariantQuery,
+} from '../ports/in/inventory-catalog';
 import { ApplicationError } from '../../../../shared/domain/application-error';
 import { administrativeReason } from '../../../../shared/domain/authorization';
 import type {
@@ -30,7 +34,9 @@ import type {
 } from '../commands/catalog.commands';
 import type { CatalogQuery, ProductQuery } from '../queries/catalog.queries';
 import type { CatalogUseCases } from '../ports/in/catalog-use-cases';
-export class CatalogHandlers implements CatalogAccess, CatalogUseCases {
+export class CatalogHandlers
+  implements CatalogAccess, CatalogUseCases, InventoryCatalog
+{
   constructor(
     private readonly repository: CatalogRepository,
     private readonly auth: Authorization,
@@ -39,6 +45,9 @@ export class CatalogHandlers implements CatalogAccess, CatalogUseCases {
     private readonly clock: Clock,
     private readonly entropy: Entropy,
   ) {}
+  inventoryVariants(query: InventoryVariantQuery) {
+    return this.repository.run((tx) => tx.inventoryVariants(query));
+  }
   private async load(tx: CatalogWork, id: string) {
     const state = await tx.product(id);
     if (!state)
@@ -469,6 +478,59 @@ export class CatalogHandlers implements CatalogAccess, CatalogUseCases {
         'moderation.publications.review',
       );
       return tx.products({ ...query, status: 'pending' }, false);
+    });
+  }
+  private async preview(tx: CatalogWork, query: ProductQuery) {
+    if (!query.actorId)
+      throw new ApplicationError(
+        'FORBIDDEN',
+        'Authenticated independent reviewer required.',
+      );
+    await tx.lock(`user:${query.actorId}`);
+    await this.auth.requirePermission(
+      query.actorId,
+      'moderation.publications.review',
+    );
+    const initial = (await this.load(tx, query.id)).snapshot();
+    await tx.lock(`organization:${initial.organizationId}`);
+    await tx.lock(`product:${initial.id}`);
+    const state = (await this.load(tx, query.id)).snapshot();
+    if (
+      state.createdBy === query.actorId ||
+      (await this.organizations.membershipsForUser(query.actorId)).some(
+        (m) => m.organizationId === state.organizationId,
+      )
+    )
+      throw new ApplicationError(
+        'FORBIDDEN',
+        'Creators and organization members cannot review their own products.',
+      );
+    const organizations = await this.organizations.states([
+      state.organizationId,
+    ]);
+    if (
+      state.status !== 'pending' ||
+      organizations[0]?.status !== 'active' ||
+      organizations[0].type !== 'business'
+    )
+      throw new ApplicationError(
+        'CONFLICT',
+        'Only pending products of active businesses have a review preview.',
+      );
+    return this.detail(tx, state, true);
+  }
+  reviewPreview(query: ProductQuery) {
+    return this.repository.run((tx) => this.preview(tx, query));
+  }
+  reviewPhoto(query: ProductQuery, mediaId: string) {
+    return this.repository.run(async (tx) => {
+      const detail = await this.preview(tx, query);
+      if (!detail.photos.some((p) => p.mediaId === mediaId))
+        throw new ApplicationError(
+          'RESOURCE_NOT_FOUND',
+          'Product photo was not found.',
+        );
+      return (await this.media.read(mediaId, query.id)).bytes;
     });
   }
   photo(query: ProductQuery, mediaId: string) {

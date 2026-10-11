@@ -1,6 +1,6 @@
 # Services
 
-Status: implemented, Colombia/COP. Updated: 2026-10-09. Swagger: http://localhost:3100/api/docs; JSON: http://localhost:3100/api/openapi.json. Read [DESIGN](../DESIGN.md) and [Bookings](bookings.md) together with this document.
+Status: implemented, Colombia/COP. Updated: 2026-10-10. Swagger: http://localhost:3100/api/docs; JSON: http://localhost:3100/api/openapi.json. Read [DESIGN](../DESIGN.md) and [Bookings](bookings.md) together with this document.
 
 ## Purpose and boundaries
 
@@ -66,6 +66,7 @@ All routes below have `/api` prefix, English operation descriptions, UUID/query/
 | DELETE /services/admin/{serviceId}                             | Terminal archive, not row deletion                                                                                                                                             |
 | GET /services/admin/{serviceId}/audit                          | Bounded immutable revisions                                                                                                                                                    |
 | POST/GET /services/admin/resources                             | Create / list scoped resources                                                                                                                                                 |
+| GET /services/admin/resources/{resourceId}/audit               | Immutable scoped resource history; page/limit                                                                                                                                  |
 | PATCH /services/admin/resources/{resourceId}                   | Replace resource profile safely                                                                                                                                                |
 | GET /services/admin/resources/{resourceId}/blocks              | Active future blocks in UTC from/to interval within 210 days                                                                                                                   |
 | POST /services/admin/resources/{resourceId}/blocks             | Add full-capacity block using expected resource version                                                                                                                        |
@@ -98,3 +99,11 @@ Delivery verification (2026-10-09): API/worker lint, typecheck/build, Prisma sch
 ## Veterinary clinical eligibility
 
 Veterinary appointments require veterinaryCredentialId and exactly the credential’s active dedicated capacity-one resource. Configure/submit/review, public search/detail/availability and booking offer recheck VeterinaryEligibility; appointments must end before the reviewer’s deadline. Service pause/archive remains available after revocation. ServicesReadModule exposes a minimal resource directory independently, avoiding a cycle with Veterinary. Private evidence/registration/reference is never included in public services. See [Veterinary](veterinary.md).
+
+## Angular service management
+
+The backoffice now implements scoped service search/create/full profile replacement, COP pricing and appointment/lodging policy forms, compatible existing-resource assignment, audited submission/pause/archive, independent publication review and paginated history. Version conflicts and uncertain outcomes block automatic replay. Clinical validation remains authoritative in Services/Veterinary; the first form accepts an accreditation UUID and its dedicated capacity-one resource rather than exposing private professional documents. Resources, calendars, blocks and availability are implemented; reservation management is also implemented in [Backoffice Bookings](backoffice-bookings.md). The response DTO/OpenAPI nullable reviewReason now preserves the existing 10–500 character reason invariant and generates text rather than an array. The reviewReason correction requires no migration or new endpoint. See [Backoffice Services](backoffice-services.md) for routes, limits and manual verification.
+
+Resource operational screens and Colombia availability are documented in [Backoffice resources](backoffice-resources.md). The resource audit read uses existing persisted audits, scoped authorization and the Services hexagonal ports; no migration is required.
+
+Clinical service preparation now selects currently eligible professionals by displayed name and binds the credential's dedicated agenda; no manual credential UUID is required. The minimal veterinary projection does not grant evidence access. The backend remains authoritative and rechecks eligibility for actual service/appointment use.

@@ -1,6 +1,6 @@
 # Notifications
 
-Status: persistent business inbox, optional email preferences, SMTP delivery/reminders and superadmin delivery recovery implemented. Updated: 2026-10-09.
+Status: persistent business inbox, optional email preferences, SMTP delivery/reminders and superadmin delivery recovery implemented. Updated: 2026-10-10.
 
 ## Purpose, ownership and architecture
 
@@ -91,10 +91,14 @@ Do not fabricate a production SMTP outage or mutate shared business data merely 
 
 Automated checks cover unit policy/aggregate/contracts/template escaping; real PostgreSQL constraints and transaction rollback; all producer categories including internally verified paid orders; HTTP ownership/privacy, one-way reads and cutoff; optimistic concurrent preference updates and queue cancellation; mandatory membership delivery/idempotent no-op; concurrent audited retry and actual worker/Mailpit delivery; refusal of Auth/canceled replay; English OpenAPI. Runtime and application lint/type/build, Prisma schema and architecture checks apply.
 
-Frontend inbox/preferences screens, push/device tokens, SMS/OTP, multilingual business templates, bulk campaigns, production SMTP sender, encryption rotation and historical retention cleanup remain pending. SMS OTP stays paused by user instruction. No mobile push or SMS provider is required for this release.
+Customer web/mobile inbox screens, push/device tokens, SMS/OTP, multilingual business templates, bulk campaigns, production SMTP sender, encryption rotation and historical retention cleanup remain pending. SMS OTP stays paused by user instruction. No mobile push or SMS provider is required for this release.
 
 Delivery verification (2026-10-09): 62 unit tests and 61 isolated real-infrastructure scenarios passed (62 results including suite). API/worker lint, typecheck/build, Prisma schema, format, architecture and OpenAPI validation passed: 176 operations, eight Notifications. Docker image built and migration 012 applied only to pettly_db using pettly_dev; three new tables and six guards/triggers verified. API/worker/Mailpit healthy, Swagger 200, anonymous private routes 401. Shared inbox/preferences/retry audit remain empty; all mutable failure/concurrency/mail fixtures used temporary services and were removed. No new manual local setup required.
 
 ## Operational visibility and security cleanup
 
 Operations adds private Prometheus backlog/oldest-due/terminal-failure metrics and a project-prefixed Redis worker heartbeat. Maintenance can clear terminal or expired encrypted delivery payloads, retaining inbox, delivery metadata and retry audit. It does not purge notification history. The worker Docker healthcheck verifies its recent heartbeat; SMTP success remains a separate delivery concern. See [Operations](operations.md) for monitoring, thresholds and explicit retention commands.
+
+## Backoffice — 2026-10-10
+
+Angular personal inbox/count/reads, versioned preferences and superadmin failed-delivery recovery are implemented. See [Backoffice Notifications](backoffice-notifications.md) for routes, permissions, cutoff semantics, concurrency and tests. Nullable delivery string DTOs now reflect existing database length bounds (subjectType 30, mailPurpose 40, failureKind 30), correcting Swagger/client array reflection; there is no migration or new endpoint. OpenAPI remains 194 operations.

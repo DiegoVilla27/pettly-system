@@ -55,12 +55,20 @@ export class PaymentsHandlers implements PaymentsUseCases {
     return Payment.restore(state);
   }
   private async visible(actor: string, p: PaymentState) {
-    if (actor !== p.buyerId)
+    if (actor === p.buyerId) return;
+    try {
       await this.auth.requirePermission(
         actor,
         'payments.business.read',
         p.organizationId,
       );
+    } catch (error) {
+      // Independent platform oversight remains available for suspended sellers.
+      // Authentication, dependency and unexpected failures must never be bypassed.
+      if (!(error instanceof ApplicationError) || error.code !== 'FORBIDDEN')
+        throw error;
+      await this.auth.requirePermission(actor, 'payments.platform.manage');
+    }
   }
   private async persist(
     tx: PaymentsWork,

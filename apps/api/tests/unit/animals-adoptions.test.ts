@@ -240,3 +240,31 @@ test('image adapter rejects disguised/animated content and strips metadata while
   assert.equal(metadata.exif, undefined);
   assert.equal(metadata.icc, undefined);
 });
+
+test('declared health flags retain boolean or unknown semantics across animal request DTOs', () => {
+  for (const vaccinated of [null, true, false])
+    for (const neutered of [null, true, false]) {
+      assert.equal(
+        CreateAnimalDto.schema.safeParse({
+          profile: { name: 'Luna', species: 'dog', vaccinated, neutered },
+          reason: 'Shelter record verified',
+        }).success,
+        true,
+      );
+      assert.equal(
+        UpdateAnimalDto.schema.safeParse({
+          profile: { vaccinated, neutered },
+          expectedVersion: 1,
+          reason: 'Shelter record verified',
+        }).success,
+        true,
+      );
+    }
+  assert.equal(
+    CreateAnimalDto.schema.safeParse({
+      profile: { name: 'Luna', species: 'dog', vaccinated: [] },
+      reason: 'Shelter record verified',
+    }).success,
+    false,
+  );
+});

@@ -1,3 +1,4 @@
+import { INVENTORY_CATALOG } from './application/ports/in/inventory-catalog';
 import { Module } from '@nestjs/common';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
@@ -54,7 +55,8 @@ import {
       ],
     },
     { provide: CATALOG_ACCESS, useExisting: CATALOG_USE_CASES },
+    { provide: INVENTORY_CATALOG, useExisting: CATALOG_USE_CASES },
   ],
-  exports: [CATALOG_ACCESS],
+  exports: [CATALOG_ACCESS, INVENTORY_CATALOG],
 })
 export class CatalogModule {}

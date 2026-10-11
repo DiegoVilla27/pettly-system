@@ -1,6 +1,6 @@
 # Bookings
 
-Status: implemented for appointments and lodging in Colombia. Updated: 2026-10-09. Swagger: http://localhost:3100/api/docs. Read [Services](services.md), [Notifications](notifications.md) and [DESIGN](../DESIGN.md).
+Status: implemented for appointments and lodging in Colombia. Updated: 2026-10-10. Swagger: http://localhost:3100/api/docs. Read [Services](services.md), [Notifications](notifications.md) and [DESIGN](../DESIGN.md).
 
 ## Purpose and architecture
 
@@ -47,23 +47,23 @@ Acceptance and immutable audits contain personal contact/pet identity required t
 
 All routes have `/api` prefix. Authenticated Bearer access token, English Swagger, strict request validation and validated response DTOs. Common failures: 400 malformed contract, 401 unauthenticated, 403 ownership/scope failure, 404 unavailable service/unknown record, 409 stale version, changed total, calendar/capacity/pet conflict or invalid lifecycle.
 
-| Route                                     | Purpose                                                        |
-| ----------------------------------------- | -------------------------------------------------------------- |
-| POST /bookings                            | Idempotent customer allocation                                 |
-| GET /bookings                             | Own bounded search by status/service, page 1–10000, limit 1–50 |
-| GET /bookings/{bookingId}                 | Own accepted policy and current state                          |
-| GET /bookings/{bookingId}/audit           | Own bounded immutable revisions                                |
-| POST /bookings/{bookingId}/cancel         | Own cancellation under accepted cutoff                         |
-| POST /bookings/{bookingId}/reschedule     | Renew policy and allocation atomically                         |
-| GET /bookings/admin                       | Business-scoped search; organizationId required                |
-| GET /bookings/admin/{bookingId}           | Private accepted information for service delivery              |
-| GET /bookings/admin/{bookingId}/audit     | Scoped revision history                                        |
-| POST /bookings/admin/{bookingId}/confirm  | Decide unexpired pending request                               |
-| POST /bookings/admin/{bookingId}/reject   | Reject pending request                                         |
-| POST /bookings/admin/{bookingId}/cancel   | Provider cancellation of future booking                        |
-| POST /bookings/admin/{bookingId}/start    | Record attendance during interval                              |
-| POST /bookings/admin/{bookingId}/complete | Finish attended service                                        |
-| POST /bookings/admin/{bookingId}/no_show  | Record missed service after grace                              |
+| Route                                     | Purpose                                                               |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| POST /bookings                            | Idempotent customer allocation                                        |
+| GET /bookings                             | Own bounded search by status/service, page 1–10000, limit 1–50        |
+| GET /bookings/{bookingId}                 | Own accepted policy and current state                                 |
+| GET /bookings/{bookingId}/audit           | Own bounded immutable revisions                                       |
+| POST /bookings/{bookingId}/cancel         | Own cancellation under accepted cutoff                                |
+| POST /bookings/{bookingId}/reschedule     | Renew policy and allocation atomically                                |
+| GET /bookings/admin                       | Business-scoped literal accepted-name search; organizationId required |
+| GET /bookings/admin/{bookingId}           | Private accepted information for service delivery                     |
+| GET /bookings/admin/{bookingId}/audit     | Scoped revision history                                               |
+| POST /bookings/admin/{bookingId}/confirm  | Decide unexpired pending request                                      |
+| POST /bookings/admin/{bookingId}/reject   | Reject pending request                                                |
+| POST /bookings/admin/{bookingId}/cancel   | Provider cancellation of future booking                               |
+| POST /bookings/admin/{bookingId}/start    | Record attendance during interval                                     |
+| POST /bookings/admin/{bookingId}/complete | Finish attended service                                               |
+| POST /bookings/admin/{bookingId}/no_show  | Record missed service after grace                                     |
 
 ## PostgreSQL storage
 
@@ -92,7 +92,7 @@ Isolated real PostgreSQL/Redis/Mailpit scenarios cover scope/ownership, capacity
 7. Book lodging dates and verify nights × minor-unit price and UTC checkin/checkout. No online payment exists.
 8. Check immediate mail and scheduled outbox; reminders become deliverable only at notBefore. Use real near-start reservations to test attendance/grace, rather than altering development DB timestamps.
 
-Group/multi-pet bookings, provider-initiated rescheduling, deposits/online split payments/refunds, no-show fees, veterinarian verification, recurring appointments, holidays/opening exceptions and retention automation remain future scope.
+Group/multi-pet bookings, provider-initiated rescheduling, deposits/online split payments/refunds, no-show fees, recurring appointments, holidays/opening exceptions and retention automation remain future scope.
 
 Delivery verification (2026-10-09): API/worker lint, typecheck/build, Prisma schema, hexagonal boundaries, formatting, 58 unit tests and 58 isolated integration scenarios passed (59 results with the suite). OpenAPI validates 168 operations, including 21 Services and 15 Bookings. Final Docker image built; migration 011 applied only to pettly_db on shared-network, with six new tables and fourteen guards/triggers verified. API/worker healthy; Swagger/public services return 200 and anonymous private operations 401. No real service/resource/booking fixtures were created in shared development infrastructure. All mutation/concurrency/mail fixtures ran in temporary PostgreSQL/Redis/Mailpit and were removed.
 
@@ -103,3 +103,7 @@ Cada revisión también conserva una entrada en la bandeja persistente del clien
 ## Veterinary appointments
 
 Accepted snapshots retain optional category/veterinaryCredentialId; legacy snapshots remain compatible. Clinical selection must end before independently verified accreditation deadline; new bookings and provider confirm/start recheck current professional membership/account/credential. Revocation does not erase accepted appointments; cancellations/history/completion remain explicit. SQL guards also protect current clinical eligibility. See [Veterinary](veterinary.md).
+
+## Backoffice management — 2026-10-10
+
+Angular booking management is implemented: scoped list/search, accepted-policy detail, provider confirm/reject/cancel/start/complete/no-show and paginated revision history. Managed search accepts optional `search` (2–100 characters, no control characters), matching accepted service, pet or contact names case-insensitively as literals. Organization remains required; status/service filters and pagination bounds are unchanged. The query flows through application/repository ports to the scoped Prisma JSON filter; `%`, `_` and backslashes are escaped. Customer list behavior is unchanged. No schema migration or new endpoint is needed; generated OpenAPI remains 194 operations. Read [Backoffice Bookings](backoffice-bookings.md) for roles, routes, accepted-data projection, concurrency, advisory UI time and verification. Veterinary eligibility is implemented and revalidated by the existing Services/Bookings integration, documented in [Veterinary](veterinary.md).

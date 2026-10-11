@@ -32,6 +32,7 @@ export default {
           `pnpm exec eslint --config apps/${project}/eslint.config.mjs --fix --no-warn-ignored ${lintFiles.map(quote).join(' ')}`,
         );
         commands.push(`pnpm nx typecheck ${project}`);
+        if (project === 'admin') commands.push('pnpm check:admin-architecture');
       }
     }
     const shared = files.filter(

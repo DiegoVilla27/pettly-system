@@ -1,0 +1,180 @@
+<p class="text-xs font-semibold tracking-widest text-primary uppercase">
+  Operación de empresas
+</p>
+<h1 class="mt-3 text-3xl font-semibold tracking-tight">Inventario</h1>
+<p class="mt-3 max-w-2xl text-muted">
+  Existencias por producto y variante. Cada empresa conserva sus saldos,
+  reservas e historial.
+</p>
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-5 sm:p-6"
+  aria-label="Selección de inventario"
+>
+  @if(session.identity()?.role==='super_admin'){<label
+    for="inventory-company-search"
+    class="mb-2 block text-sm font-semibold"
+    >Buscar empresa</label
+  ><input
+    id="inventory-company-search"
+    type="search"
+    [formControl]="companySearch"
+    [attr.aria-invalid]="companySearch.invalid&&companySearch.touched"
+    maxlength="100"
+    aria-describedby="inventory-company-help"
+    class="min-h-12 w-full rounded-xl border border-line bg-paper px-4"
+  />
+  <p id="inventory-company-help" class="mt-2 text-xs text-muted">
+    Busca por nombre. Se muestran hasta 20 empresas activas; escribe para
+    encontrar otras.
+  </p>
+  }
+  <app-problem [problem]="store.companiesProblem()" />
+  @if(store.companiesLoading()){
+  <p role="status" class="mt-3 text-sm text-muted">Buscando empresas…</p>
+  }
+  <form
+    [formGroup]="form"
+    (ngSubmit)="searchInventory()"
+    aria-label="Consultar inventario"
+    class="mt-5"
+  >
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="inventory-company" class="mb-2 block text-sm font-semibold"
+          >Empresa del inventario</label
+        ><select
+          id="inventory-company"
+          formControlName="organizationId"
+          [attr.aria-invalid]="form.controls.organizationId.invalid&&form.controls.organizationId.touched"
+          aria-describedby="inventory-company-scope"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+        >
+          <option value="">Selecciona una empresa</option>
+          @for(c of store.companies();track c.id){
+          <option [value]="c.id">{{c.name}}</option>
+          }
+        </select>
+        <p id="inventory-company-scope" class="mt-2 text-xs text-muted">
+          Solo empresas activas con permisos de inventario.
+        </p>
+      </div>
+      <div>
+        <label for="inventory-search" class="mb-2 block text-sm font-semibold"
+          >Buscar producto o SKU</label
+        ><input
+          id="inventory-search"
+          type="search"
+          formControlName="search"
+          maxlength="100"
+          [attr.aria-invalid]="form.controls.search.invalid&&form.controls.search.touched"
+          aria-describedby="inventory-search-help"
+          class="min-h-12 w-full rounded-xl border border-line bg-paper px-4"
+        />
+        <p id="inventory-search-help" class="mt-2 text-xs text-muted">
+          Nombre o SKU, hasta 100 caracteres.
+        </p>
+      </div>
+      <div>
+        <label for="inventory-status" class="mb-2 block text-sm font-semibold"
+          >Estado de variante</label
+        ><select
+          id="inventory-status"
+          formControlName="status"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+        >
+          <option value="">Todas</option>
+          <option value="active">Activa</option>
+          <option value="archived">Archivada</option>
+        </select>
+      </div>
+      <div>
+        <label for="inventory-limit" class="mb-2 block text-sm font-semibold"
+          >Variantes por página</label
+        ><select
+          id="inventory-limit"
+          formControlName="limit"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+        >
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+    <button
+      type="submit"
+      [disabled]="store.companiesLoading()"
+      class="mt-5 min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+    >
+      Consultar existencias
+    </button>
+  </form>
+</section>
+<div class="mt-5"><app-problem [problem]="store.problem()" /></div>
+@if(!query()){
+<p
+  role="status"
+  class="mt-6 rounded-2xl border border-line bg-white p-6 text-sm text-muted"
+>
+  Selecciona una empresa para consultar su inventario.
+</p>
+}@else if(store.loading()){
+<p role="status" class="mt-6 text-sm text-muted">Cargando inventario…</p>
+}@else if(store.problem()){<button
+  type="button"
+  (click)="store.load(query())"
+  class="mt-5 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar consulta</button
+>}@else{
+<p role="status" class="mt-6 text-sm text-muted">
+  {{store.total()}} variantes encontradas
+</p>
+<ul class="mt-4 space-y-3" aria-label="Existencias por variante">
+  @for(row of store.entities();track row.id){
+  <li class="rounded-2xl border border-line bg-white p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <a
+          [routerLink]="['/inventario',row.organizationId,'variantes',row.id]"
+          class="font-semibold break-words text-primary hover:underline"
+          >{{row.productName}}<span class="sr-only"> · {{row.sku}}</span></a
+        >
+        <p class="mt-2 text-sm break-all text-muted">{{row.sku}}</p>
+      </div>
+      <span class="rounded-full bg-paper px-3 py-1 text-xs font-semibold"
+        >{{row.variantStatus==='active'?'Activa':'Archivada'}}</span
+      >
+    </div>
+    <dl class="mt-5 grid grid-cols-3 gap-3 text-sm">
+      <div>
+        <dt class="text-xs text-muted">Físico</dt>
+        <dd class="mt-1 font-semibold">{{row.stock.onHand}}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-muted">Reservado</dt>
+        <dd class="mt-1 font-semibold">{{row.stock.reserved}}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-muted">Disponible</dt>
+        <dd class="mt-1 font-semibold text-primary">{{row.stock.available}}</dd>
+      </div>
+    </dl>
+    <p class="mt-4 text-xs text-muted">
+      Producto {{productLabels[row.productStatus]}} · Saldo versión
+      {{row.stock.version}}
+    </p>
+  </li>
+  }@empty{
+  <li class="rounded-2xl border border-line bg-white p-7 text-sm text-muted">
+    No hay variantes con estos filtros.
+  </li>
+  }
+</ul>
+<app-pagination
+  [page]="store.page()"
+  [total]="store.total()"
+  [limit]="store.limit()"
+  (pageChange)="page($event)"
+/>
+}

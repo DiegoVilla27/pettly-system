@@ -1,0 +1,152 @@
+<a
+  routerLink="/pagos"
+  [queryParams]="backQuery()"
+  class="inline-flex min-h-11 items-center text-sm font-semibold text-primary"
+  >← Volver a pagos</a
+>
+<div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <p class="text-xs font-semibold text-primary">Detalle financiero</p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">Intento de pago</h1>
+  </div>
+  <button
+    type="button"
+    class="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+    (click)="refresh()"
+    [disabled]="store.busy() || store.loading()"
+  >
+    Actualizar pago
+  </button>
+</div>
+@if (!context()) {
+<p role="alert" class="mt-5 text-sm text-danger">
+  La dirección del pago no es válida.
+</p>
+} @if (store.loading()) {
+<p role="status" class="mt-5 text-sm text-muted">Cargando pago…</p>
+}
+<app-problem [problem]="store.problem()" />
+@if (store.payment(); as p) {
+<app-payment-snapshot [payment]="p" />
+@if (platform()) {
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="reconciliation-title"
+>
+  <h2 id="reconciliation-title" class="text-lg font-semibold">Conciliación</h2>
+  <p class="mt-3 text-sm text-muted">
+    Solicita una consulta al proveedor. El resultado se verificará en segundo
+    plano; la solicitud no confirma un cobro ni una distribución.
+  </p>
+  <app-problem [problem]="store.policyProblem()" />
+  @if (!store.policy()?.providerEnabled || store.policy()?.provider !==
+  p.provider) {
+  <p class="mt-3 rounded-xl bg-paper p-4 text-sm">
+    La pasarela de este intento no está configurada. La conciliación permanece
+    deshabilitada.
+  </p>
+  } @if (store.requested()) {
+  <p role="status" class="mt-3 rounded-xl bg-sage p-4 text-sm">
+    Consulta solicitada. Actualiza el pago y revisa el historial para conocer el
+    resultado.
+  </p>
+  } @if (store.refreshRequired() && !store.requested()) {
+  <p role="status" class="mt-3 text-sm">
+    Actualiza y revisa el historial antes de continuar.
+  </p>
+  }
+  <button
+    type="button"
+    class="mt-4 min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+    [disabled]="!reconcileAvailable()"
+    (click)="confirm.set(true)"
+  >
+    Solicitar conciliación
+  </button>
+  @if (confirm() && reconcileAvailable()) {
+  <div class="mt-4 rounded-xl border border-line p-4">
+    <p class="text-sm">
+      ¿Solicitar una nueva consulta al proveedor para este pago?
+    </p>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button
+        type="button"
+        class="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-strong disabled:opacity-50"
+        (click)="reconcile()"
+      >
+        Confirmar consulta</button
+      ><button
+        type="button"
+        class="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+        (click)="confirm.set(false)"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+  }
+</section>
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="financial-title"
+>
+  <h2 id="financial-title" class="text-lg font-semibold">
+    Evidencia financiera
+  </h2>
+  <p class="mt-3 text-sm text-muted">
+    Últimos 100 eventos normalizados y hasta 100 registros de captura. Acceso
+    exclusivo del superadministrador; no representan un saldo bancario.
+  </p>
+  <button
+    type="button"
+    class="mt-4 min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+    (click)="showEvidence.set(!showEvidence())"
+  >
+    {{showEvidence() ? 'Ocultar evidencia' : 'Ver evidencia financiera'}}
+  </button>
+  @if (store.evidenceLoading()) {
+  <p role="status" class="mt-4 text-sm">Cargando evidencia…</p>
+  }<app-problem [problem]="store.evidenceProblem()" />@if (store.evidence(); as
+  evidence) { <app-payment-evidence [evidence]="evidence" [payment]="p" /> }
+</section>
+}
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="payment-history-title"
+>
+  <h2 id="payment-history-title" class="text-lg font-semibold">
+    Historial del pago
+  </h2>
+  <p class="mt-2 text-sm text-muted">
+    Las consultas pueden compartir versión. Fechas en hora de Colombia.
+  </p>
+  <app-problem [problem]="store.historyProblem()" /> @if
+  (store.historyLoading()) {
+  <p role="status" class="mt-4 text-sm">Cargando historial…</p>
+  } @if (store.history(); as h) {
+  <ol class="mt-4 space-y-4">
+    @for (a of h.items; track a.id) {
+    <li class="border-t border-line pt-4">
+      <p class="font-semibold">{{historyLabel(a.action)}} · v{{a.version}}</p>
+      <p class="mt-1 text-xs text-muted">{{date(a.createdAt)}}</p>
+      <p class="mt-2 text-xs break-all">
+        Responsable: {{a.actorId ?? 'Sistema'}}
+      </p>
+      <p class="mt-1 text-xs break-all text-muted">
+        Referencia de solicitud: {{a.requestId}}
+      </p>
+    </li>
+    } @empty {
+    <li class="text-sm text-muted">No hay registros para esta página.</li>
+    }
+  </ol>
+  <app-pagination
+    [page]="h.page"
+    [limit]="h.limit"
+    [total]="h.total"
+    [busy]="store.historyLoading()"
+    (pageChange)="page($event)"
+  />
+  }
+</section>
+}

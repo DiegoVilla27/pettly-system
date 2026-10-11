@@ -1,0 +1,95 @@
+@let p = payment();
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5 sm:p-6"
+  aria-labelledby="allocation-title"
+>
+  <div class="flex flex-wrap justify-between gap-4">
+    <div>
+      <p class="text-sm font-semibold">{{ statusLabel(p.status) }}</p>
+      <p class="mt-2 text-sm text-muted">
+        {{ distributionLabels[p.distributionStatus] }}
+      </p>
+    </div>
+    <p class="text-2xl font-semibold">{{ money(p.amountMinor) }}</p>
+  </div>
+  <dl class="mt-6 grid gap-4 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-muted">Pago</dt>
+      <dd class="mt-1 break-all">{{ p.id }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Empresa</dt>
+      <dd class="mt-1 break-all">{{ p.organizationId }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Pedido</dt>
+      <dd class="mt-1 break-all">{{ p.orderId }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Comprador</dt>
+      <dd class="mt-1 break-all">{{ p.buyerId }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Proveedor</dt>
+      <dd class="mt-1 break-all">{{ p.provider }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Referencia del proveedor</dt>
+      <dd class="mt-1 break-all">{{ p.reference ?? 'Sin referencia' }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Creado</dt>
+      <dd class="mt-1">{{ date(p.createdAt) }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Actualizado</dt>
+      <dd class="mt-1">{{ date(p.updatedAt) }} · v{{ p.version }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Límite del intento</dt>
+      <dd class="mt-1">{{ date(p.expiresAt) }}</dd>
+    </div>
+  </dl>
+  <h2
+    id="allocation-title"
+    class="mt-7 border-t border-line pt-5 text-lg font-semibold"
+  >
+    Distribución aceptada
+  </h2>
+  <p class="mt-2 text-sm text-muted">
+    Condiciones conservadas al confirmar el pedido; no cambian con la comisión
+    actual.
+  </p>
+  <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-muted">Base: subtotal de productos</dt>
+      <dd class="mt-1 font-semibold">{{ money(p.allocation.baseMinor) }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">
+        Comisión Pettly ({{ p.allocation.rateBasisPoints / 100 }} %)
+      </dt>
+      <dd class="mt-1 font-semibold">
+        {{ money(p.allocation.platformMinor) }}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-muted">Asignación de la empresa antes de cargos</dt>
+      <dd class="mt-1 font-semibold">{{ money(p.allocation.sellerMinor) }}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Cargo del proveedor, a cuenta de la empresa</dt>
+      <dd class="mt-1 font-semibold">
+        {{ p.feeMinor === null ? 'Aún no informado' : money(p.feeMinor) }}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-muted">Política aceptada</dt>
+      <dd class="mt-1 break-all">{{ p.allocation.policyId }}</dd>
+    </div>
+  </dl>
+  <p class="mt-5 rounded-xl bg-paper p-4 text-sm text-muted">
+    Pago aprobado y distribución confirmada son estados distintos. Esta vista no
+    certifica un abono bancario, un saldo disponible ni la entrega del pedido.
+  </p>
+</section>

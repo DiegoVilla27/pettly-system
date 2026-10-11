@@ -122,3 +122,9 @@ A real global role change revokes all target sessions atomically with Users role
 ## Security retention integration
 
 Operations provides an explicit dry-run/apply maintenance command for expired sessions and action tokens older than thirty days. It preserves live session families and their consumed refresh hashes for replay detection; deletion of an expired session cascades only its refresh records. No users, audit or business history are removed. The grace period is an internal technical policy, not a legal retention rule. See [Operations](operations.md).
+
+## Angular backoffice client
+
+The browser backoffice now consumes login/refresh/logout and the current Users/Authorization contracts with memory-only access tokens, HttpOnly refresh cookies, CSRF headers, route guards and tab coordination. Its generated DTOs, mappers, failure handling, verification and deployment limitations are documented in [Backoffice](backoffice.md). The Next.js/Flutter clients and password recovery UI remain pending.
+
+Actual backoffice routes now consume invitation, reset, verification and email-change tokens from SMTP links, clearing token fragments from the visible URL before explicit submission. Local `WEB_PUBLIC_URL` points to `http://localhost:4300` in API/worker Docker configuration. Password, email, session and account operations are available under Account; see [Backoffice account](backoffice-account.md). Plain customers still cannot enter the administrative shell.
