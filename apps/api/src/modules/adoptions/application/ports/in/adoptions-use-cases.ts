@@ -58,6 +58,11 @@ export interface AdoptionsUseCases {
     query: PublicPublicationsQuery,
   ): Promise<{ items: PublicPublication[]; nextCursor: string | null }>;
   publicGet(id: string): Promise<PublicPublication>;
+  managedPhoto(
+    actorId: string,
+    id: string,
+    mediaId: string,
+  ): Promise<Uint8Array>;
   publicPhoto(id: string, mediaId: string): Promise<Uint8Array>;
   apply(command: SubmitAdoptionRequestCommand): Promise<AdoptionRequestResult>;
   requests(query: AdoptionRequestsQuery): ReturnType<AdoptionsWork['requests']>;

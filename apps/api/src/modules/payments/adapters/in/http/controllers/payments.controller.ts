@@ -110,7 +110,7 @@ export class PaymentsController {
     operationId: 'getVisiblePayment',
     summary: 'Read a visible payment and its immutable allocation',
     description:
-      'Active verified buyer or owning active-business financial administrator. Approval and distribution are separate states; processing charges remain null until authoritatively reported. Reconciliation-required payments block replacement attempts.',
+      'Active verified buyer, owning active-business financial administrator, or superadmin with payments.platform.manage regardless of seller status. Approval and distribution are separate states; processing charges remain null until authoritatively reported. Reconciliation-required payments block replacement attempts.',
   })
   @ApiOkResponse({ type: S.PaymentResponseDto })
   @ZodSerializerDto(S.PaymentResponseDto)
@@ -126,7 +126,7 @@ export class PaymentsController {
     operationId: 'listVisiblePaymentHistory',
     summary: 'Read immutable payment audit history',
     description:
-      'Same buyer/business financial scope as payment detail; bounded pagination. Provider/scheduler changes have null system actor; requestId supports tracing.',
+      'Same buyer/business/platform financial scope as payment detail, including suspended sellers for superadmin; bounded pagination. Provider/scheduler changes have null system actor; requestId supports tracing.',
   })
   @ApiOkResponse({ type: S.PaymentHistoryResponseDto })
   @ZodSerializerDto(S.PaymentHistoryResponseDto)

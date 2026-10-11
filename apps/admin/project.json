@@ -50,7 +50,8 @@
       "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
       "options": {
-        "port": 4200
+        "port": 4200,
+        "proxyConfig": "apps/admin/proxy.conf.json"
       },
       "configurations": {
         "production": {
@@ -74,7 +75,30 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "ngc --noEmit -p apps/admin/tsconfig.app.json"
+        "command": "ngc --noEmit -p apps/admin/tsconfig.app.json && tsc --noEmit -p apps/admin/tsconfig.e2e.json"
+      }
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "buildTarget": "admin:build:development",
+        "tsConfig": "apps/admin/tsconfig.spec.json",
+        "runner": "vitest",
+        "watch": false
+      }
+    },
+    "architecture": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/check-admin-architecture.mjs"
+      }
+    },
+    "test:integration": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build", "api:build", "worker:build"],
+      "cache": false,
+      "options": {
+        "command": "node scripts/testing/admin-integration.mjs"
       }
     }
   }

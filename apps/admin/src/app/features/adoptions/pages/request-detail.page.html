@@ -1,0 +1,194 @@
+<a
+  [routerLink]="['/adopciones',context()?.organizationId,context()?.publicationId,'solicitudes']"
+  class="inline-flex min-h-11 items-center text-sm font-semibold text-primary"
+  >← Volver a solicitudes</a
+>
+<div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <p class="text-xs font-semibold text-primary">Adopción desde el refugio</p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+      Solicitud de adopción
+    </h1>
+  </div>
+  <button
+    type="button"
+    (click)="refresh()"
+    [disabled]="store.loading()||store.busy()"
+    class="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold disabled:opacity-50"
+  >
+    Actualizar solicitud
+  </button>
+</div>
+@if(!context()){
+<p role="alert" class="mt-4 text-danger">
+  La dirección de solicitud no es válida.
+</p>
+} @if(store.loading()){
+<p role="status" class="mt-4">Cargando solicitud…</p>
+} <app-problem [problem]="store.problem()" /><app-problem
+  [problem]="store.auditProblem()"
+/>
+@if(store.detail();as d){@if(context();as c){
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="request-summary"
+>
+  <h2 id="request-summary" class="text-lg font-semibold">
+    {{d.publication.title}}
+  </h2>
+  <p class="mt-3 text-sm">
+    {{label(d.request.status)}} · v{{d.request.version}}
+  </p>
+  <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-muted">Solicitud</dt>
+      <dd class="break-all">{{d.request.id}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Solicitante</dt>
+      <dd class="break-all">{{d.request.applicantId}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Recibida</dt>
+      <dd>{{date(d.request.createdAt)}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Consentimiento registrado</dt>
+      <dd>
+        {{date(d.request.consentedAt)}} · publicación
+        v{{d.request.publicationVersion}}
+      </dd>
+    </div>
+  </dl>
+  <h3 class="mt-5 font-semibold">Mensaje del solicitante</h3>
+  <p class="mt-2 text-sm break-words">{{d.request.message}}</p>
+  <h3 class="mt-5 font-semibold">Condiciones aceptadas</h3>
+  <p class="mt-2 text-sm break-words">{{d.request.conditionsAccepted}}</p>
+  @if(d.request.conditionsAccepted!==d.publication.conditions){
+  <p role="status" class="mt-4 rounded-xl bg-paper p-4 text-sm">
+    Las condiciones cambiaron. El solicitante debe retirar su solicitud y volver
+    a solicitar con el consentimiento actualizado. No se puede aprobar ni
+    confirmar la entrega.
+  </p>
+  } @if(d.request.reviewReason){
+  <h3 class="mt-5 font-semibold">Última decisión</h3>
+  <p class="mt-2 text-sm break-words">{{d.request.reviewReason}}</p>
+  <p class="mt-2 text-xs break-all text-muted">
+    Responsable: {{d.request.reviewedBy}} ·
+    {{d.request.reviewedAt?date(d.request.reviewedAt):''}}
+  </p>
+  } @if(d.request.completedAt){
+  <p class="mt-4 rounded-xl bg-sage p-4 text-sm">
+    Entrega confirmada el {{date(d.request.completedAt)}}. El animal está
+    adoptado y la publicación está cerrada.
+  </p>
+  }
+</section>
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="request-contact"
+>
+  <h2 id="request-contact" class="text-lg font-semibold">
+    Contacto privado autorizado
+  </h2>
+  <p class="mt-2 text-xs text-muted">
+    Datos actuales compartidos con el refugio por consentimiento. Úsalos
+    únicamente para gestionar esta adopción.
+  </p>
+  @if(d.request.contact;as contact){
+  <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-muted">Nombre</dt>
+      <dd class="break-words">{{contact.name}} {{contact.lastName}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Correo electrónico</dt>
+      <dd class="break-all">{{contact.email}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Teléfono</dt>
+      <dd>{{contact.phone??'Sin teléfono actual'}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Localidad</dt>
+      <dd class="break-words">
+        {{contact.city??'Sin ciudad'}} · {{contact.countryCode??'Sin país'}}
+      </dd>
+    </div>
+  </dl>
+  }@else{
+  <p class="mt-4 text-sm text-muted">
+    Contacto no disponible; la cuenta puede haber sido anonimizada.
+  </p>
+  }
+</section>
+@if(store.success()){
+<p role="status" class="mt-4 rounded-xl bg-sage p-4 text-sm">
+  Decisión de solicitud registrada.
+</p>
+} @if(store.refreshRequired()){
+<p role="status" class="mt-4 text-sm">
+  Actualiza y revisa la solicitud y el historial antes de continuar.
+</p>
+}
+<section class="mt-6 rounded-2xl border border-line bg-white p-5">
+  <app-request-decision
+    [detail]="d"
+    [context]="c"
+    [busy]="store.busy()"
+    [blocked]="store.refreshRequired()"
+    (submitted)="execute($event)"
+  />
+  @if(d.publication.status!=='published'||['rejected','withdrawn','completed','closed'].includes(d.request.status)){
+  <p class="text-sm text-muted">
+    No hay decisiones disponibles para el estado actual de la publicación y la
+    solicitud.
+  </p>
+  }
+</section>
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="request-audit"
+>
+  <h2 id="request-audit" class="text-lg font-semibold">
+    Historial de la publicación y sus solicitudes
+  </h2>
+  <p class="mt-2 text-xs text-muted">
+    Incluye las acciones de la publicación y de sus solicitudes. La solicitud
+    actual aparece identificada.
+  </p>
+  @if(store.auditLoading()){
+  <p role="status" class="mt-4">Cargando historial…</p>
+  }@if(store.audit();as h){
+  <ol aria-label="Historial de adopción" class="mt-4 space-y-4">
+    @for(e of h.items;track e.id){
+    <li class="border-t border-line pt-4">
+      <p class="font-semibold">{{auditLabels[e.action]}}</p>
+      @if(e.requestId){
+      <p class="mt-2 text-xs break-all text-muted">
+        Solicitud: {{e.requestId}}{{e.requestId===d.request.id?' · solicitud
+        actual':''}}
+      </p>
+      }
+      <p class="mt-2 text-sm break-words">{{e.reason}}</p>
+      <p class="mt-2 text-xs text-muted">{{date(e.createdAt)}}</p>
+      <p class="mt-1 text-xs break-all text-muted">
+        Responsable: {{e.actorId}}
+      </p>
+      <p class="mt-1 text-xs break-all text-muted">
+        Referencia: {{e.correlationId}}
+      </p>
+    </li>
+    }@empty{
+    <li class="text-sm text-muted">No hay acciones en esta página.</li>
+    }
+  </ol>
+  <app-pagination
+    [page]="h.page"
+    [limit]="h.limit"
+    [total]="h.total"
+    [busy]="store.auditLoading()"
+    (pageChange)="page($event)"
+  />}
+</section>
+}}

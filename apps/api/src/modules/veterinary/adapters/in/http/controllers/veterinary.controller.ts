@@ -47,6 +47,7 @@ import {
 import {
   CredentialQuery,
   CredentialsQuery,
+  EligibleCredentialsQuery,
 } from '../../../../application/queries/credential.queries';
 import * as R from '../dtos/requests/veterinary.requests';
 import * as S from '../dtos/responses/veterinary.responses';
@@ -60,6 +61,67 @@ export class VeterinaryController {
   constructor(
     @Inject(VETERINARY_USE_CASES) private readonly use: VeterinaryUseCases,
   ) {}
+  @Get('mine')
+  @ApiOperation({
+    operationId: 'listOwnVeterinaryCredentials',
+    summary: 'List the authenticated professional own private credentials',
+    description:
+      'Active verified owner only; actor identity is derived from authentication. Bounded pagination and optional organization/status filters. No other professional evidence or unrestricted administrative queue.',
+  })
+  @ApiOkResponse({ type: S.CredentialsResponseDto })
+  @ZodSerializerDto(S.CredentialsResponseDto)
+  async mine(
+    @Query() d: R.CredentialsFilterDto,
+    @Req() r: AuthenticatedRequest,
+  ) {
+    const result = await this.use.mine(
+      new CredentialsQuery(
+        r.principal.userId,
+        d.page,
+        d.limit,
+        d.organizationId,
+        d.status,
+      ),
+    );
+    return {
+      ...result,
+      items: result.items.map(M.credential),
+      page: d.page,
+      limit: d.limit,
+    };
+  }
+  @Get('eligible')
+  @ApiOperation({
+    operationId: 'listEligibleVeterinaryCredentials',
+    summary:
+      'Find currently eligible veterinary professionals for a business service',
+    description:
+      'Scoped services.manage and active Colombian business required, including superadministrators. Returns only credential/professional/resource identifiers, professional display name and verification deadline. No registration, university, evidence or review reference. Current active verified professional affiliation and dedicated capacity-one appointment resource are rechecked. Paginated approved/unexpired candidates are filtered for current eligibility; candidateTotal is before this filtering. Service creation and booking independently recheck eligibility.',
+  })
+  @ApiOkResponse({ type: S.EligibleCredentialsResponseDto })
+  @ZodSerializerDto(S.EligibleCredentialsResponseDto)
+  async eligible(
+    @Query() d: R.EligibleCredentialsDto,
+    @Req() r: AuthenticatedRequest,
+  ) {
+    const result = await this.use.eligibleList(
+      new EligibleCredentialsQuery(
+        r.principal.userId,
+        d.organizationId,
+        d.page,
+        d.limit,
+      ),
+    );
+    return {
+      ...result,
+      items: result.items.map((i) => ({
+        ...i,
+        verifiedUntil: i.verifiedUntil.toISOString(),
+      })),
+      page: d.page,
+      limit: d.limit,
+    };
+  }
   @Post()
   @ApiOperation({
     operationId: 'createVeterinaryCredential',

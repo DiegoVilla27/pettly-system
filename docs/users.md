@@ -192,3 +192,9 @@ OTP/SMS and recovery codes are explicitly paused by the user; no OTP endpoints o
 Delivery validation: 14 unit tests and 25 integration tests passed (24 feature scenarios plus the parent integration test). API/worker lint, typecheck and build passed; architecture boundaries and the OpenAPI export passed with 35 operations. The original credential/session flows remain covered alongside the new administrative/security workflows.
 
 Local deployment verification: migration 202610080005 is applied to pettly_db on shared-network; pg_trgm is installed. The API/worker production image built successfully, the API is healthy, and live Swagger exposes 35 operations. Unauthenticated administrative/session requests return 401. No real account was created, deleted or granted privileges by this delivery's tests; all test fixtures used isolated temporary infrastructure.
+
+## Backoffice administration
+
+The Angular superadmin interface implements list/search/filter/pagination, invitation and resend, detail, audited profile/status/global-role changes, scoped memberships and user audit. Requests and responses use generated OpenAPI types and Zod Mini validation. See [Backoffice users](backoffice-users.md) for routes, validation, permissions, session effects and verification. Deleted accounts are read-only in this interface; irreversible erasure has no UI action in this delivery.
+
+The backoffice includes the existing administrative anonymization operation and the own-account profile editor. Its public DTO boundaries prevent profile requests from assigning email, status or roles. See [Backoffice account](backoffice-account.md) and [Backoffice users](backoffice-users.md).

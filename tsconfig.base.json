@@ -16,6 +16,8 @@
     "customConditions": ["@pettly/source"],
     "noUncheckedSideEffectImports": false,
     "types": ["*"],
-    "paths": {}
+    "paths": {
+      "@pettly/api-client": ["./packages/api-client/src/index.ts"]
+    }
   }
 }

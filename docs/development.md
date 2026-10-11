@@ -153,3 +153,9 @@ Notifications local release verified on 2026-10-09: migration 012 applied only i
 ## Veterinary and operations
 
 Migration 013 adds private credential/audit, clinical service/resource/booking guards and maintenance/metrics indexes; apply only to Pettly DB. No new professional/role is seeded. API readiness now checks PostgreSQL+Redis; worker healthcheck verifies its heartbeat. Local METRICS_TOKEN and PETTLY_BACKUP_KEY are independent private .env values, never committed; prepare Prometheus token under ignored tmp and keep backup keys separately recoverable. Backups are excluded from Git/Docker. Read [Veterinary](veterinary.md) and [Operations](operations.md) for manual contracts, retention dry-run, verified restore, measured load, private monitoring and production templates. Actual external hosting/alerts/backup storage need operator choices; no production deployment has occurred.
+
+## Angular backoffice
+
+The admin now has a real login, session, protected workspace and account/access view. Styles use Tailwind 4; every component uses OnPush and the app is zoneless. See [Backoffice](backoffice.md) for architecture, generated API contracts, commands, browser checks and API proxy configuration. Run `pnpm exec nx serve admin` on port 4200 against the Docker API on 3100, or rebuild admin in Compose and open port 4300. The API must explicitly allow the browser Origin (4200 for Nx; 4300 for Docker). Never put JWTs into browser persistent storage.
+
+Backoffice email-action delivery: local Docker sets `WEB_PUBLIC_URL=http://localhost:4300`. API and worker use the same setting; invite/verify/reset/change-email messages point to implemented Angular routes. Configure your own HTTPS origin when deploying. Next.js remains a scaffold for these customer-facing actions until its implementation.

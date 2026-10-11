@@ -1,0 +1,202 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="mt-5">
+  <fieldset [disabled]="busy() || blocked()">
+    <legend class="text-lg font-semibold">
+      {{ animal() ? 'Editar perfil' : 'Datos del animal' }}
+    </legend>
+    <p class="mt-2 text-sm text-muted">
+      Las notas clínicas y el microchip son privados. Los datos declarados no
+      equivalen a una certificación veterinaria.
+    </p>
+    <div class="mt-5 grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="animal-name" class="mb-2 block text-sm font-semibold"
+          >Nombre *</label
+        ><input
+          id="animal-name"
+          formControlName="name"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+          maxlength="100"
+          [attr.aria-invalid]="invalid('name')"
+        />
+        @if (invalid('name')) {
+          <p class="mt-2 text-sm text-danger">
+            Introduce un nombre de hasta 100 caracteres.
+          </p>
+        }
+      </div>
+      <div>
+        <label for="animal-species" class="mb-2 block text-sm font-semibold"
+          >Especie *</label
+        ><select
+          id="animal-species"
+          formControlName="species"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        >
+          @for (s of species; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+      @for (f of textFields; track f.key) {
+        <div>
+          <label
+            [for]="'animal-' + f.key"
+            class="mb-2 block text-sm font-semibold"
+            >{{ f.label }}</label
+          ><input
+            [id]="'animal-' + f.key"
+            [formControlName]="f.key"
+            [maxlength]="f.max"
+            class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+            [attr.aria-invalid]="invalid(f.key)"
+          />
+          @if (invalid(f.key)) {
+            <p class="mt-2 text-sm text-danger">
+              Revisa el texto y su longitud.
+            </p>
+          }
+        </div>
+      }
+      <div>
+        <label for="animal-sex" class="mb-2 block text-sm font-semibold"
+          >Sexo</label
+        ><select
+          id="animal-sex"
+          formControlName="sex"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        >
+          @for (s of sexes; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="animal-size" class="mb-2 block text-sm font-semibold"
+          >Tamaño</label
+        ><select
+          id="animal-size"
+          formControlName="size"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        >
+          @for (s of sizes; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="animal-birth" class="mb-2 block text-sm font-semibold"
+          >Fecha de nacimiento</label
+        ><input
+          id="animal-birth"
+          type="date"
+          formControlName="dateOfBirth"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+          [attr.aria-invalid]="invalid('dateOfBirth')"
+        />
+        @if (invalid('dateOfBirth')) {
+          <p class="mt-2 text-sm text-danger">
+            Usa una fecha real que no esté en el futuro.
+          </p>
+        }
+      </div>
+      <div>
+        <label for="animal-weight" class="mb-2 block text-sm font-semibold"
+          >Peso (kg)</label
+        ><input
+          id="animal-weight"
+          inputmode="decimal"
+          formControlName="weight"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+          [attr.aria-invalid]="invalid('weight')"
+        />
+        <p class="mt-2 text-xs text-muted">
+          Hasta tres decimales. Vacío significa desconocido.
+        </p>
+        @if (invalid('weight')) {
+          <p class="mt-2 text-sm text-danger">Peso entre 0,001 y 2000 kg.</p>
+        }
+      </div>
+      @for (f of healthFields; track f.key) {
+        <div>
+          <label
+            [for]="'animal-' + f.key"
+            class="mb-2 block text-sm font-semibold"
+            >{{ f.label }}</label
+          ><select
+            [id]="'animal-' + f.key"
+            [formControlName]="f.key"
+            class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+          >
+            <option value="unknown">Sin información</option>
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+      }
+    </div>
+    <label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+      ><input
+        type="checkbox"
+        formControlName="birthDateEstimated"
+        class="size-5 accent-primary"
+      />La fecha de nacimiento es estimada</label
+    >
+    @for (f of notes; track f.key) {
+      <div class="mt-4">
+        <label
+          [for]="'animal-' + f.key"
+          class="mb-2 block text-sm font-semibold"
+          >{{ f.label }}</label
+        ><textarea
+          [id]="'animal-' + f.key"
+          [formControlName]="f.key"
+          [maxlength]="f.max"
+          rows="3"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+          [attr.aria-invalid]="invalid(f.key)"
+        ></textarea>
+        @if (invalid(f.key)) {
+          <p class="mt-2 text-sm text-danger">
+            Usa texto continuo, sin saltos de línea, de hasta
+            {{ f.max }} caracteres.
+          </p>
+        }
+      </div>
+    }
+    <div class="mt-4">
+      <label for="animal-reason" class="mb-2 block text-sm font-semibold"
+        >Motivo del registro o cambio *</label
+      ><textarea
+        id="animal-reason"
+        formControlName="reason"
+        maxlength="500"
+        rows="2"
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+        [attr.aria-invalid]="invalid('reason')"
+      ></textarea>
+      <p class="mt-2 text-xs text-muted">
+        Entre 10 y 500 caracteres. No incluyas datos clínicos privados.
+      </p>
+      @if (invalid('reason')) {
+        <p class="mt-2 text-sm text-danger">Introduce un motivo válido.</p>
+      }
+    </div>
+    <label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+      ><input
+        type="checkbox"
+        formControlName="confirm"
+        class="size-5 accent-primary"
+        [attr.aria-invalid]="invalid('confirm')"
+      />Confirmo los datos y el refugio de este registro</label
+    >
+    @if (error()) {
+      <p role="alert" class="mt-2 text-sm text-danger">{{ error() }}</p>
+    }
+    <button
+      type="submit"
+      class="mt-5 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-strong disabled:opacity-50"
+    >
+      {{ busy() ? 'Guardando…' : animal() ? 'Guardar perfil' : 'Crear animal' }}
+    </button>
+  </fieldset>
+</form>

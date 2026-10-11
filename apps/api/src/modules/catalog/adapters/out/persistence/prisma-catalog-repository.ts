@@ -1,3 +1,4 @@
+import type { InventoryVariant } from '../../../application/ports/in/inventory-catalog';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Database } from '../../../../../shared/infrastructure/database';
@@ -14,6 +15,57 @@ export class PrismaCatalogRepository implements CatalogRepository {
     return this.db
       .transaction(() =>
         callback({
+          inventoryVariants: async (query) => {
+            const where: Prisma.CatalogVariantWhereInput = {
+              organizationId: query.organizationId,
+              ...(query.variantId ? { id: query.variantId } : {}),
+              ...(query.status ? { status: query.status } : {}),
+              ...(query.search
+                ? {
+                    OR: [
+                      { sku: { contains: query.search, mode: 'insensitive' } },
+                      {
+                        product: {
+                          name: { contains: query.search, mode: 'insensitive' },
+                        },
+                      },
+                    ],
+                  }
+                : {}),
+            };
+            const [rows, total] = await Promise.all([
+              this.db.client.catalogVariant.findMany({
+                where,
+                take: query.limit,
+                skip: (query.page - 1) * query.limit,
+                orderBy: [{ sku: 'asc' }, { id: 'asc' }],
+                select: {
+                  id: true,
+                  organizationId: true,
+                  productId: true,
+                  sku: true,
+                  status: true,
+                  product: { select: { name: true, status: true } },
+                },
+              }),
+              this.db.client.catalogVariant.count({ where }),
+            ]);
+            return {
+              items: rows.map((row) => ({
+                id: row.id,
+                organizationId: row.organizationId,
+                productId: row.productId,
+                sku: row.sku,
+                variantStatus: row.status as InventoryVariant['variantStatus'],
+                productName: row.product.name,
+                productStatus: row.product
+                  .status as InventoryVariant['productStatus'],
+              })),
+              total,
+              page: query.page,
+              limit: query.limit,
+            };
+          },
           lock: (key) => this.db.lock(key),
           category: async (id) => {
             const row = await this.db.client.catalogCategory.findUnique({

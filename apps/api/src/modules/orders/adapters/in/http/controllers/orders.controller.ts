@@ -164,7 +164,7 @@ export class OrdersController {
     operationId: 'listVisibleOrders',
     summary: 'List own or managed business orders',
     description:
-      'Default scope is authenticated buyer. Explicit organizationId requires current owning active-business orders.fulfillment.manage. Bounded pagination and status filter; contact details are never public. Deadline expiry is recovered by the scheduler and individual reads.',
+      'Default scope is authenticated buyer. Explicit organizationId requires current owning active-business orders.fulfillment.manage. Bounded pagination, status and literal accepted recipient/city or exact order UUID search; contact details are never public. Deadline expiry is recovered by the scheduler and individual reads.',
   })
   @ApiOkResponse({ type: S.OrdersResponseDto })
   @ZodSerializerDto(S.OrdersResponseDto)
@@ -179,6 +179,7 @@ export class OrdersController {
         d.limit,
         d.organizationId,
         d.status,
+        d.search,
       ),
     );
     return { ...result, items: result.items.map(M.order) };

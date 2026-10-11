@@ -14,6 +14,21 @@ export class PrismaInventoryRepository implements InventoryRepository {
     return this.db
       .transaction(() =>
         callback({
+          stocks: (ids) =>
+            this.db.client.inventoryStock.findMany({
+              where: { variantId: { in: ids } },
+            }),
+          dueHolds: async (ids, now) =>
+            (
+              await this.db.client.inventoryHold.findMany({
+                where: {
+                  variantId: { in: ids },
+                  status: 'active',
+                  expiresAt: { lte: now },
+                },
+                orderBy: [{ variantId: 'asc' }, { id: 'asc' }],
+              })
+            ).map(Mapper.hold),
           lock: (key) => this.db.lock(key),
           stock: (variantId) =>
             this.db.client.inventoryStock.findUnique({ where: { variantId } }),

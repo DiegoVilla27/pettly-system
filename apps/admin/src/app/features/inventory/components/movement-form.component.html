@@ -1,0 +1,97 @@
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="stock-command-title"
+>
+  <h2 id="stock-command-title" class="text-xl font-semibold">
+    Registrar movimiento
+  </h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Las entradas suman unidades; las salidas restan unidades disponibles. Un
+    ajuste aplica una diferencia positiva o negativa, sin reemplazar el saldo ni
+    liberar reservas.
+  </p>
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    aria-label="Registrar movimiento de inventario"
+    class="mt-5"
+  >
+    <fieldset [disabled]="busy() || blocked()" class="space-y-5">
+      <legend class="sr-only">Movimiento físico auditado</legend>
+      <div>
+        <label for="movement-kind" class="mb-2 block text-sm font-semibold"
+          >Tipo de movimiento</label
+        ><select
+          id="movement-kind"
+          formControlName="kind"
+          [attr.aria-invalid]="
+            form.controls.kind.invalid && form.controls.kind.touched
+          "
+          aria-describedby="movement-kind-help"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+        >
+          <option value="">Selecciona el movimiento</option>
+          <option value="receipt">Entrada</option>
+          <option value="issue">Salida</option>
+          <option value="adjustment">Ajuste</option>
+        </select>
+        <p id="movement-kind-help" class="mt-2 text-xs text-muted">
+          Selecciona una operación. Ninguna viene preseleccionada.
+        </p>
+      </div>
+      <div>
+        <label for="movement-quantity" class="mb-2 block text-sm font-semibold"
+          >Cantidad de unidades</label
+        ><input
+          id="movement-quantity"
+          type="number"
+          inputmode="numeric"
+          step="1"
+          min="-1000000"
+          max="1000000"
+          formControlName="quantity"
+          [attr.aria-invalid]="
+            form.controls.quantity.invalid && form.controls.quantity.touched
+          "
+          aria-describedby="movement-quantity-help"
+          class="min-h-12 w-full rounded-xl border border-line bg-paper px-4"
+        />
+        <p id="movement-quantity-help" class="mt-2 text-xs text-muted">
+          Enteros distintos de cero, hasta un millón por operación. Entradas y
+          salidas: cantidad positiva. Ajustes: diferencia con signo.
+        </p>
+        @if (form.controls.quantity.invalid && form.controls.quantity.touched) {
+          <p role="alert" class="mt-2 text-sm text-danger">
+            Revisa la cantidad y las unidades disponibles. No puedes restar
+            existencias reservadas.
+          </p>
+        }
+      </div>
+      <div>
+        <label for="movement-reason" class="mb-2 block text-sm font-semibold"
+          >Motivo del movimiento</label
+        ><textarea
+          id="movement-reason"
+          rows="3"
+          maxlength="500"
+          formControlName="reason"
+          [attr.aria-invalid]="
+            form.controls.reason.invalid && form.controls.reason.touched
+          "
+          aria-describedby="movement-reason-help"
+          class="w-full rounded-xl border border-line bg-paper px-4 py-3"
+        ></textarea>
+        <p id="movement-reason-help" class="mt-2 text-xs text-muted">
+          Entre 10 y 500 caracteres, sin saltos de línea. Se conserva en el
+          historial.
+        </p>
+      </div>
+      <button
+        type="submit"
+        class="min-h-12 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {{ busy() ? 'Registrando…' : 'Confirmar movimiento' }}
+      </button>
+    </fieldset>
+  </form>
+</section>

@@ -1,0 +1,201 @@
+<a
+  routerLink="/servicios/recursos"
+  class="inline-flex min-h-11 items-center text-sm font-semibold text-primary"
+  >Recursos y agendas →</a
+>
+<section>
+  <p class="text-xs font-semibold tracking-widest text-primary uppercase">
+    Cuidar también es organizar
+  </p>
+  <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+    {{review?'Revisión de servicios':'Servicios de tu empresa'}}
+  </h1>
+  <p class="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
+    {{review?'Revisa propuestas de publicación. Aprobar exige independencia y
+    recursos elegibles; la API comprueba cada decisión.':'Gestiona la oferta, el
+    precio y las condiciones que tus clientes aceptarán al reservar. Los cambios
+    se guardan como borrador.'}}
+  </p>
+  <nav aria-label="Áreas de servicios" class="mt-5 flex flex-wrap gap-4">
+    <a
+      routerLink="/servicios"
+      class="min-h-11 py-3 text-sm font-semibold text-primary hover:underline"
+      >Gestión por empresa</a
+    >@if(session.hasPermission('moderation.publications.review')){<a
+      routerLink="/servicios/revision"
+      class="min-h-11 py-3 text-sm font-semibold text-primary hover:underline"
+      >Revisión independiente</a
+    >}
+  </nav>
+</section>
+@if(!review){
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="service-search-title"
+>
+  <h2 id="service-search-title" class="text-lg font-semibold">
+    Encuentra un servicio
+  </h2>
+  @if(session.identity()?.role==='super_admin'){
+  <div class="mt-5">
+    <label
+      for="services-company-search"
+      class="mb-2 block text-sm font-semibold"
+      >Buscar empresa de servicios</label
+    ><input
+      id="services-company-search"
+      [formControl]="companySearch"
+      maxlength="100"
+      class="min-h-12 w-full rounded-xl border border-line bg-paper px-3"
+      aria-describedby="services-company-search-help"
+    />
+    <p id="services-company-search-help" class="mt-2 text-xs text-muted">
+      Busca una empresa activa. Se muestran hasta 20 coincidencias.
+    </p>
+  </div>
+  } <app-problem [problem]="store.companiesProblem()" />
+  <form
+    [formGroup]="form"
+    (ngSubmit)="searchServices()"
+    class="mt-5 grid gap-5 sm:grid-cols-2"
+    aria-label="Buscar servicios"
+  >
+    <div>
+      <label for="services-company" class="mb-2 block text-sm font-semibold"
+        >Empresa de servicios</label
+      ><select
+        id="services-company"
+        formControlName="organizationId"
+        [attr.aria-invalid]="form.controls.organizationId.touched && form.controls.organizationId.invalid"
+        aria-describedby="services-company-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Selecciona una empresa</option>
+        @for(c of store.companies();track c.id){
+        <option [value]="c.id">{{c.name}}</option>
+        }
+      </select>
+      <p id="services-company-help" class="mt-2 text-xs text-muted">
+        {{store.companiesLoading()?'Buscando empresas…':'Selecciona el espacio
+        que quieres gestionar.'}}
+      </p>
+    </div>
+    <div>
+      <label for="services-search" class="mb-2 block text-sm font-semibold"
+        >Buscar servicio por nombre</label
+      ><input
+        id="services-search"
+        formControlName="search"
+        maxlength="100"
+        [attr.aria-invalid]="form.controls.search.touched && form.controls.search.invalid"
+        aria-describedby="services-search-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-paper px-3"
+      />
+      <p id="services-search-help" class="mt-2 text-xs text-muted">
+        Deja vacío o escribe entre 2 y 100 caracteres.
+      </p>
+    </div>
+    <div>
+      <label for="services-status" class="mb-2 block text-sm font-semibold"
+        >Estado del servicio</label
+      ><select
+        id="services-status"
+        formControlName="status"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos los estados</option>
+        @for(s of statuses;track s.value){
+        <option [value]="s.value">{{s.label}}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="services-category" class="mb-2 block text-sm font-semibold"
+        >Filtrar categoría de servicio</label
+      ><select
+        id="services-category"
+        formControlName="category"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todas las categorías</option>
+        @for(c of categories;track c.value){
+        <option [value]="c.value">{{c.label}}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="services-limit" class="mb-2 block text-sm font-semibold"
+        >Servicios por página</label
+      ><select
+        id="services-limit"
+        formControlName="limit"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+    <div class="flex items-end">
+      <button
+        type="submit"
+        [disabled]="store.loading()"
+        class="min-h-12 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        Consultar servicios
+      </button>
+    </div>
+  </form>
+</section>
+@if(query();as q){<a
+  [routerLink]="['/servicios',q.organizationId,'nuevo']"
+  class="mt-6 inline-flex min-h-12 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-white"
+  >Crear servicio</a
+>}}
+<app-problem [problem]="store.problem()" />
+@if(store.loading()){
+<p role="status" class="mt-6 text-sm text-muted">Consultando servicios…</p>
+}@else if(request() && !store.problem()){
+<ul aria-label="Servicios encontrados" class="mt-6 grid gap-5 sm:grid-cols-2">
+  @for(s of store.entities();track s.id){
+  <li class="min-w-0 rounded-3xl border border-line bg-white p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <span
+        class="rounded-full bg-sage px-3 py-1 text-xs font-semibold text-primary"
+        >{{statusLabel(s.status)}}</span
+      ><span class="text-xs text-muted">{{categoryLabel(s.category)}}</span>
+    </div>
+    <h2 class="mt-4 text-lg font-semibold break-words">
+      <a
+        [routerLink]="review?['/servicios/revision',s.id]:['/servicios',s.organizationId,s.id]"
+        class="text-primary underline-offset-4 hover:underline"
+        >{{s.name}}</a
+      >
+    </h2>
+    <p class="mt-3 text-sm font-semibold">
+      {{moneyLabel(s.priceMinor)}}
+      <span class="font-normal text-muted"
+        >/ {{s.kind==='lodging'?'noche':'cita'}}</span
+      >
+    </p>
+    <p class="mt-2 text-sm text-muted">
+      {{s.kind==='lodging'?s.minNights+'–'+s.maxNights+'
+      noches':s.durationMinutes+' minutos'}} · {{s.resourceIds.length}} recursos
+    </p>
+    <p class="mt-3 text-xs text-muted">
+      Versión {{s.version}} · Cobro en el establecimiento
+    </p>
+  </li>
+  }@empty{
+  <li class="rounded-3xl border border-line bg-white p-6 text-sm text-muted">
+    No hay servicios con estos filtros.
+  </li>
+  }
+</ul>
+<app-pagination
+  [total]="store.total()"
+  [page]="store.page()"
+  [limit]="store.limit()"
+  (pageChange)="page($event)"
+/>
+}

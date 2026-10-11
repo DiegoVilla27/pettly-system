@@ -44,6 +44,9 @@ jobs:
         env:
           PROJECT: ${{ inputs.project }}
         run: pnpm exec prettier --check "apps/$PROJECT"
+      - name: Check backoffice architecture
+        if: inputs.project == 'admin'
+        run: pnpm check:admin-architecture
       - name: Lint and typecheck
         env:
           PROJECT: ${{ inputs.project }}
@@ -83,6 +86,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
+      - name: Install browser for backoffice integration tests
+        if: inputs.project == 'admin'
+        run: pnpm exec playwright install --with-deps chromium
       - name: Run available integration suite
         id: tests
         env:
@@ -103,7 +109,9 @@ jobs:
         run: pnpm exec nx build "$PROJECT"
       - name: Generate and validate OpenAPI
         if: inputs.project == 'api'
-        run: node scripts/export-openapi.mjs
+        run: |
+          node scripts/export-openapi.mjs
+          node scripts/generate-api-client.mjs --check
       - uses: actions/upload-artifact@v4
         if: inputs.project == 'api'
         with:

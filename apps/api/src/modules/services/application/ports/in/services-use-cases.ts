@@ -31,6 +31,12 @@ export interface ServicesUseCases {
   get(id: string, actorId?: string): Promise<ServiceState>;
   list(q: ServicesQuery): ReturnType<ServicesWork['list']>;
   resources(org: string, actorId: string): Promise<ResourceState[]>;
+  resourceAudits(
+    id: string,
+    actor: string,
+    page: number,
+    limit: number,
+  ): ReturnType<ServicesWork['resourceAudits']>;
   audits(
     id: string,
     actor: string,

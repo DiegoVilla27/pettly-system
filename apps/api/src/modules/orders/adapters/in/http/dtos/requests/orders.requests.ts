@@ -124,6 +124,10 @@ export class ListOrdersDto extends createZodDto(
   z.strictObject({
     ...pagination,
     organizationId: z.uuid().optional(),
+    search: text(2, 100).optional().meta({
+      description:
+        'Literal case-insensitive search in accepted recipient/city, or an exact order UUID. Applied within the authorized buyer/business scope.',
+    }),
     status: z
       .enum([
         'awaiting_payment',

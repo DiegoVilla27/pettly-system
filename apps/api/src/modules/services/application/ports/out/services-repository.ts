@@ -17,6 +17,11 @@ export interface ServicesWork {
   saveBlock(b: BlockState): Promise<void>;
   list(q: ServicesQuery): Promise<{ items: ServiceState[]; total: number }>;
   audit(a: ServiceAudit): Promise<void>;
+  resourceAudits(
+    resourceId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ items: ServiceAudit[]; total: number }>;
   audits(
     serviceId: string,
     page: number,

@@ -1,0 +1,148 @@
+<div class="flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <p class="text-xs font-semibold tracking-widest text-primary uppercase">
+      Catálogo
+    </p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+      Revisión de productos
+    </h1>
+    <p class="mt-3 max-w-2xl text-muted">
+      Productos pendientes de una decisión independiente, con sus variantes,
+      precios y fotografías.
+    </p>
+  </div>
+  @if(session.identity()?.role==='super_admin'){<a
+    routerLink="categorias"
+    class="inline-flex min-h-12 items-center rounded-xl border border-line bg-white px-5 text-sm font-semibold"
+    >Gestionar categorías</a
+  >}
+</div>
+<form
+  [formGroup]="form"
+  (ngSubmit)="search()"
+  aria-label="Filtrar productos pendientes"
+  class="mt-7 rounded-3xl border border-line bg-white p-5 sm:p-6"
+>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div>
+      <label for="product-search" class="mb-2 block text-sm font-semibold"
+        >Buscar productos</label
+      ><input
+        id="product-search"
+        type="search"
+        formControlName="search"
+        maxlength="100"
+        [attr.aria-invalid]="form.controls.search.invalid&&form.controls.search.touched"
+        aria-describedby="product-search-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-paper px-4"
+      />
+      <p id="product-search-help" class="mt-2 text-xs text-muted">
+        Nombre del producto, máximo 100 caracteres.
+      </p>
+    </div>
+    <div>
+      <label for="product-organization" class="mb-2 block text-sm font-semibold"
+        >ID de empresa</label
+      ><input
+        id="product-organization"
+        formControlName="organizationId"
+        maxlength="36"
+        [attr.aria-invalid]="form.controls.organizationId.invalid&&form.controls.organizationId.touched"
+        aria-describedby="product-organization-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-paper px-4"
+      />
+      <p id="product-organization-help" class="mt-2 text-xs text-muted">
+        UUID de organización, opcional.
+      </p>
+    </div>
+    <div>
+      <label for="product-category" class="mb-2 block text-sm font-semibold"
+        >ID de categoría</label
+      ><input
+        id="product-category"
+        formControlName="categoryId"
+        maxlength="36"
+        [attr.aria-invalid]="form.controls.categoryId.invalid&&form.controls.categoryId.touched"
+        aria-describedby="product-category-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-paper px-4"
+      />
+      <p id="product-category-help" class="mt-2 text-xs text-muted">
+        UUID de categoría, opcional.
+      </p>
+    </div>
+    <div>
+      <label for="product-limit" class="mb-2 block text-sm font-semibold"
+        >Productos por página</label
+      ><select
+        id="product-limit"
+        formControlName="limit"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+  </div>
+  <div class="mt-5 flex flex-wrap gap-3">
+    <button
+      type="submit"
+      class="min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white"
+    >
+      Buscar productos pendientes</button
+    ><button
+      type="button"
+      (click)="clear()"
+      class="min-h-11 rounded-xl border border-line px-5 text-sm font-medium"
+    >
+      Limpiar filtros
+    </button>
+  </div>
+</form>
+<div class="mt-5"><app-problem [problem]="store.problem()" /></div>
+@if(store.loading()){
+<p role="status" class="mt-6 text-sm text-muted">
+  Cargando productos pendientes…
+</p>
+}@else if(store.problem()){<button
+  type="button"
+  (click)="store.load(filters())"
+  class="mt-5 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar</button
+>}@else{
+<p role="status" class="mt-6 text-sm text-muted">
+  {{store.total()}} productos pendientes
+</p>
+<ul class="mt-4 space-y-3" aria-label="Productos pendientes">
+  @for(p of store.entities();track p.id){
+  <li class="rounded-2xl border border-line bg-white p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <a
+        [routerLink]="['productos',p.id]"
+        class="font-semibold text-primary hover:underline"
+        >{{p.name}}</a
+      ><span class="rounded-full bg-paper px-3 py-1 text-xs font-semibold"
+        >{{p.statusLabel}}</span
+      >
+    </div>
+    <p class="mt-3 text-sm text-muted">
+      {{p.brand??'Sin marca registrada'}} · {{p.currency}} · Versión
+      {{p.version}}
+    </p>
+    <p class="mt-3 text-xs break-all text-muted">
+      Empresa: {{p.organizationId}}
+    </p>
+  </li>
+  }@empty{
+  <li class="rounded-2xl border border-line bg-white p-7 text-sm text-muted">
+    No hay productos pendientes con estos filtros.
+  </li>
+  }
+</ul>
+<app-pagination
+  [page]="store.page()"
+  [total]="store.total()"
+  [limit]="store.limit()"
+  (pageChange)="page($event)"
+/>}

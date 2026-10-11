@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { ApplicationError } from '../../src/shared/domain/application-error';
 import assert from 'node:assert/strict';
 import { randomUUID, createHash } from 'node:crypto';
 import {
@@ -338,6 +339,7 @@ function fixture() {
     events,
     ledger,
     handlers,
+    auth,
     calls: () => calls,
     advance: (ms: number) => {
       current = new Date(+current + ms);
@@ -424,4 +426,58 @@ test('collected late funds remain recorded without resurrecting expired orders o
   assert.equal(f.payments.get(p.id)?.status, 'reconciliation_required');
   assert.equal(f.ledger.size, 1);
   assert.equal(f.calls(), 0);
+});
+
+test('platform oversight reads suspended-business payment detail and history without granting business access', async () => {
+  const f = fixture(),
+    p = await f.handlers.create({
+      actorId: f.original.buyerId,
+      orderId: f.original.orderId,
+      idempotencyKey: randomUUID(),
+      requestId: randomUUID(),
+    });
+  const admin = randomUUID(),
+    member = randomUUID();
+  f.auth.requirePermission = async (actor, permission) => {
+    if (
+      permission === 'payments.business.read' ||
+      (permission === 'payments.platform.manage' && actor !== admin)
+    )
+      throw new ApplicationError('FORBIDDEN', 'Denied');
+  };
+  assert.equal(
+    (await f.handlers.get({ actorId: admin, paymentId: p.id })).id,
+    p.id,
+  );
+  assert.equal(
+    (await f.handlers.history({ actorId: admin, paymentId: p.id }, 1, 20))
+      .total,
+    1,
+  );
+  await assert.rejects(f.handlers.get({ actorId: member, paymentId: p.id }), {
+    code: 'FORBIDDEN',
+  });
+  await assert.rejects(
+    f.handlers.history({ actorId: member, paymentId: p.id }, 1, 20),
+    { code: 'FORBIDDEN' },
+  );
+});
+test('platform fallback never bypasses dependency or authentication failures', async () => {
+  const f = fixture(),
+    p = await f.handlers.create({
+      actorId: f.original.buyerId,
+      orderId: f.original.orderId,
+      idempotencyKey: randomUUID(),
+      requestId: randomUUID(),
+    });
+  for (const code of ['DEPENDENCY_UNAVAILABLE', 'UNAUTHENTICATED'] as const) {
+    f.auth.requirePermission = async (_actor, permission) => {
+      if (permission === 'payments.business.read')
+        throw new ApplicationError(code, 'Unavailable');
+    };
+    await assert.rejects(
+      f.handlers.get({ actorId: randomUUID(), paymentId: p.id }),
+      { code },
+    );
+  }
 });

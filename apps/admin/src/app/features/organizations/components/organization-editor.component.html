@@ -1,0 +1,149 @@
+<form
+  [formGroup]="form"
+  (ngSubmit)="submit()"
+  novalidate
+  [attr.aria-busy]="busy()"
+  class="space-y-8"
+>
+  <fieldset [disabled]="busy()" class="space-y-6">
+    <legend class="mb-5 text-lg font-semibold">
+      Perfil de la organización
+    </legend>
+    @if (!organization()) {
+      <div>
+        <label for="profile-type" class="mb-2 block text-sm font-semibold"
+          >Tipo de organización</label
+        ><select
+          id="profile-type"
+          formControlName="type"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-4"
+        >
+          <option value="business">Empresa</option>
+          <option value="adoption_entity">Refugio</option>
+        </select>
+        <p class="mt-2 text-xs text-muted">
+          El tipo determina los roles disponibles y no se puede cambiar después.
+        </p>
+      </div>
+    } @else {
+      <p class="rounded-xl bg-paper p-4 text-sm">
+        Tipo: <strong>{{ organization()?.typeLabel }}</strong>
+      </p>
+    }
+    @if (
+      organization()?.status === 'active' ||
+      organization()?.status === 'suspended'
+    ) {
+      <p class="rounded-xl bg-sage p-4 text-sm leading-relaxed text-primary">
+        Cambiar la razón social, el registro o el país volverá a enviar la
+        organización a revisión. Sus permisos operativos se pausarán hasta una
+        nueva aprobación.
+      </p>
+    }
+    <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+      @for (field of fields; track field.key) {
+        <div>
+          <label
+            [for]="'org-profile-' + field.key"
+            class="mb-2 block text-sm font-semibold"
+            >{{ field.label }}</label
+          >
+          @if (field.key === 'countryCode') {
+            <select
+              [id]="'org-profile-' + field.key"
+              [formControlName]="field.key"
+              [attr.autocomplete]="field.autocomplete"
+              [attr.aria-invalid]="
+                form.controls[field.key].invalid &&
+                form.controls[field.key].touched
+              "
+              [attr.aria-describedby]="'org-profile-' + field.key + '-help'"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3"
+            >
+              <option value="">Sin especificar</option>
+              @for (country of countries; track country.value) {
+                <option [value]="country.value">{{ country.label }}</option>
+              }
+            </select>
+          } @else {
+            <input
+              [id]="'org-profile-' + field.key"
+              [type]="field.type"
+              [formControlName]="field.key"
+              [attr.autocomplete]="field.autocomplete"
+              [attr.maxlength]="field.max"
+              [attr.aria-invalid]="
+                form.controls[field.key].invalid &&
+                form.controls[field.key].touched
+              "
+              [attr.aria-describedby]="'org-profile-' + field.key + '-help'"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3"
+            />
+          }
+          <p
+            [id]="'org-profile-' + field.key + '-help'"
+            class="mt-2 text-xs leading-relaxed"
+            [class.text-danger]="
+              form.controls[field.key].invalid &&
+              form.controls[field.key].touched
+            "
+            [class.text-muted]="
+              !(
+                form.controls[field.key].invalid &&
+                form.controls[field.key].touched
+              )
+            "
+          >
+            {{
+              form.controls[field.key].invalid &&
+              form.controls[field.key].touched
+                ? 'Revisa este campo. '
+                : ''
+            }}{{ field.help }}
+          </p>
+        </div>
+      }
+    </div>
+  </fieldset>
+  <div>
+    <label for="org-profile-reason" class="mb-2 block text-sm font-semibold"
+      >Motivo administrativo</label
+    ><textarea
+      id="org-profile-reason"
+      formControlName="reason"
+      rows="2"
+      maxlength="500"
+      [readOnly]="busy()"
+      [attr.aria-invalid]="
+        form.controls.reason.invalid && form.controls.reason.touched
+      "
+      aria-describedby="org-profile-reason-help"
+      class="w-full rounded-xl border border-line bg-white px-4 py-3"
+    ></textarea>
+    <p id="org-profile-reason-help" class="mt-2 text-xs text-muted">
+      10–500 caracteres, una sola línea. Quedará registrado en auditoría; evita
+      datos personales innecesarios.
+    </p>
+    @if (form.controls.reason.invalid && form.controls.reason.touched) {
+      <p class="mt-2 text-sm text-danger">
+        Escribe un motivo válido antes de continuar.
+      </p>
+    }
+  </div>
+  @if (issue()) {
+    <p role="alert" class="text-sm text-danger">{{ issue() }}</p>
+  }
+  <button
+    type="submit"
+    [disabled]="busy()"
+    class="min-h-12 rounded-xl bg-primary px-6 py-3 font-semibold text-white hover:bg-primary-strong disabled:opacity-50"
+  >
+    {{
+      busy()
+        ? 'Guardando…'
+        : organization()
+          ? 'Guardar perfil'
+          : 'Crear borrador'
+    }}
+  </button>
+</form>

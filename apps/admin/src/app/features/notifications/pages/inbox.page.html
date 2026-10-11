@@ -1,0 +1,137 @@
+<app-notifications-nav [admin]="session.identity()?.role==='super_admin'" />
+<header class="flex flex-wrap items-start justify-between gap-5">
+  <div>
+    <p class="text-xs font-semibold text-primary">Tu actividad en Pettly</p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+      Cada novedad, en un lugar.
+    </h1>
+    <p class="mt-4 text-sm text-muted">
+      Esta bandeja es personal. Leer una notificación no cambia la reserva, el
+      pedido ni el correo.
+    </p>
+  </div>
+  <button
+    type="button"
+    (click)="refresh()"
+    [disabled]="store.busy()||store.loading()"
+    class="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-50"
+  >
+    Actualizar bandeja
+  </button>
+</header>
+<app-problem [problem]="store.problem()" />@if(store.message()){
+<p role="status" class="mt-5 rounded-xl bg-sage p-4 text-sm text-primary">
+  {{store.message()}}
+</p>
+}@if(store.refreshRequired()){
+<p role="status" class="mt-4 text-sm">
+  Actualiza para comprobar el resultado antes de repetir una acción.
+</p>
+}
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="inbox-filters"
+>
+  <h2 id="inbox-filters" class="text-lg font-semibold">Mi bandeja</h2>
+  <p role="status" class="mt-3 text-sm text-primary">{{pendingLabel()}}</p>
+  <form [formGroup]="form" (ngSubmit)="search()" class="mt-5">
+    <fieldset [disabled]="store.busy()" class="grid gap-4 sm:grid-cols-2">
+      <legend class="sr-only">Filtros de mi bandeja</legend>
+      <div>
+        <label for="notice-category" class="mb-2 block text-sm font-semibold"
+          >Categoría de notificación</label
+        ><select
+          id="notice-category"
+          formControlName="category"
+          class="min-h-12 w-full rounded-xl border border-line px-3"
+        >
+          <option value="">Todas las categorías</option>
+          @for(c of categories;track c.value){
+          <option [value]="c.value">{{c.label}}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="notice-limit" class="mb-2 block text-sm font-semibold"
+          >Notificaciones por página</label
+        ><select
+          id="notice-limit"
+          formControlName="limit"
+          class="min-h-12 w-full rounded-xl border border-line px-3"
+        >
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+      <label class="flex min-h-11 items-center gap-3 text-sm"
+        ><input
+          type="checkbox"
+          formControlName="unreadOnly"
+          class="size-5"
+        />Mostrar solo sin leer</label
+      ><button
+        type="submit"
+        class="min-h-12 rounded-xl bg-primary px-5 text-sm font-semibold text-white"
+      >
+        Consultar notificaciones
+      </button>
+    </fieldset>
+  </form>
+</section>
+@if(!query()){
+<p role="alert" class="mt-5 text-sm">
+  Los filtros de la dirección no son válidos. Corrígelos y consulta de nuevo.
+</p>
+}@else if(store.loading()){
+<p role="status" class="mt-5 text-sm text-muted">Consultando notificaciones…</p>
+}@else if(!store.problem()){
+<ul aria-label="Notificaciones personales" class="mt-6 space-y-4">
+  @for(n of store.entities();track n.id){
+  <li>
+    <app-notice-card
+      [notice]="n"
+      [blocked]="store.busy()||store.refreshRequired()"
+      (read)="read($event)"
+    />
+  </li>
+  }@empty{
+  <li class="rounded-2xl border border-line bg-white p-6 text-sm text-muted">
+    No hay notificaciones con estos filtros.
+  </li>
+  }
+</ul>
+<app-pagination
+  [page]="query()?.page??1"
+  [limit]="query()?.limit??20"
+  [total]="store.total()"
+  [busy]="store.busy()"
+  (pageChange)="page($event)"
+/>@if(cutoff();as through){
+<section
+  class="mt-6 rounded-3xl border border-line bg-paper p-5"
+  aria-labelledby="read-all-heading"
+>
+  <h2 id="read-all-heading" class="font-semibold">
+    Marcar anteriores como leídas
+  </h2>
+  <p class="mt-3 text-sm text-muted">
+    Incluye todas las categorías y páginas de tu bandeja hasta
+    {{date(through)}}. Los eventos posteriores se conservan sin leer.
+  </p>
+  <label class="mt-4 flex items-start gap-3 text-sm"
+    ><input
+      type="checkbox"
+      [formControl]="bulkConfirmed"
+      class="mt-1 size-5 shrink-0"
+    />Confirmo marcar las notificaciones anteriores como leídas</label
+  ><button
+    type="button"
+    (click)="readAll()"
+    [disabled]="!bulkConfirmed.value||store.busy()||store.refreshRequired()"
+    class="mt-4 min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold disabled:opacity-50"
+  >
+    Marcar anteriores como leídas
+  </button>
+</section>
+}}

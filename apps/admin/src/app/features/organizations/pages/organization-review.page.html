@@ -1,0 +1,196 @@
+<app-problem [problem]="store.problem()" />@if(store.success()){
+<p role="status" class="mb-5 rounded-xl bg-sage p-4 text-sm text-primary">
+  {{store.success()}}
+</p>
+}<button
+  type="button"
+  (click)="store.load(organizationId())"
+  [disabled]="store.busy()||store.loading()"
+  class="mt-4 mb-5 min-h-11 rounded-xl border border-line px-4 text-sm"
+>
+  Actualizar datos
+</button>
+@if(store.loading()){
+<p role="status" class="py-8 text-muted">Cargando revisión…</p>
+}@else if(store.organization();as org){<app-organization-heading
+  [organization]="org"
+/>
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="review-readiness"
+>
+  <h2 id="review-readiness" class="text-xl font-semibold">Antes de decidir</h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Revisa la identidad legal, los datos de contacto y la cuenta responsable. La
+    aprobación habilita operaciones en Pettly; no certifica documentos legales
+    ni licencias profesionales.
+  </p>
+  <a
+    [routerLink]="['/organizaciones',org.id]"
+    class="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4"
+    >Consultar perfil completo</a
+  >@if(store.missing().length){
+  <p class="mt-4 text-sm font-semibold">Falta completar el perfil:</p>
+  <ul class="mt-3 list-disc space-y-2 ps-5 text-sm text-muted">
+    @for(field of store.missing();track field){
+    <li>{{field}}</li>
+    }
+  </ul>
+  <a
+    [routerLink]="['/organizaciones',org.id,'editar']"
+    class="mt-4 inline-flex min-h-11 items-center text-sm text-primary"
+    >Completar perfil</a
+  >}@else{
+  <p class="mt-4 rounded-xl bg-sage p-4 text-sm text-primary">
+    Los campos obligatorios del perfil están completos.
+  </p>
+  }
+</section>
+@if(org.status==='draft'||org.status==='rejected'){
+<div class="mt-7">
+  <app-organization-decision
+    id="organization-submit"
+    title="Enviar a revisión"
+    description="Se registrará una nueva solicitud. No habilita permisos operativos hasta su aprobación."
+    buttonLabel="Enviar a revisión"
+    reasonLabel="Motivo de envío"
+    [context]="context()"
+    [busy]="store.busy()||store.refreshRequired()"
+    [blocked]="store.missing().length>0"
+    (confirmed)="decide('submit',$event)"
+  />
+</div>
+} @if(org.status==='pending'||org.status==='active'||org.status==='suspended'){
+<section
+  class="mt-7 rounded-3xl border border-line bg-white p-6 sm:p-8"
+  aria-labelledby="responsible-decision"
+>
+  <h2 id="responsible-decision" class="text-xl font-semibold">
+    {{org.status==='pending'?'Aprobar solicitud':'Cambiar responsable'}}
+  </h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    {{org.status==='pending'?'Selecciona expresamente quién administrará esta
+    organización. La aprobación asignará su rol de administrador.':'El nuevo
+    responsable recibirá el rol de administrador. La membresía del responsable
+    anterior se conserva y se puede revisar desde Usuarios.'}}
+  </p>
+  @if(org.responsibleUserId){
+  <p class="mt-4 text-sm break-all text-muted">
+    Responsable actual:
+    <a
+      [routerLink]="['/usuarios',org.responsibleUserId]"
+      class="text-primary underline underline-offset-4"
+      >{{org.responsibleUserId}}</a
+    >
+  </p>
+  }
+  <app-organization-account-picker
+    [accounts]="store.accounts()"
+    [selected]="selected()"
+    [loading]="store.accountsLoading()"
+    [problem]="store.accountsProblem()"
+    [busy]="store.busy()||store.refreshRequired()"
+    (searchRequested)="store.findAccounts($event)"
+    (selection)="select($event)"
+  />
+  <form
+    [formGroup]="responsibleForm"
+    (ngSubmit)="responsible()"
+    class="mt-6 space-y-4"
+    novalidate
+  >
+    @if(responsibleForm.controls.responsibleUserId.invalid&&responsibleForm.controls.responsibleUserId.touched){
+    <p role="alert" class="text-sm text-danger">
+      Selecciona una cuenta activa y verificada.
+    </p>
+    }<label for="org-responsible-reason" class="block text-sm font-semibold"
+      >{{org.status==='pending'?'Motivo de aprobación':'Motivo del cambio de
+      responsable'}}</label
+    ><textarea
+      id="org-responsible-reason"
+      formControlName="reason"
+      rows="2"
+      maxlength="500"
+      [readOnly]="store.busy()"
+      [attr.aria-invalid]="responsibleForm.controls.reason.invalid&&responsibleForm.controls.reason.touched"
+      aria-describedby="org-responsible-help"
+      class="w-full rounded-xl border border-line px-4 py-3"
+    ></textarea>
+    <p id="org-responsible-help" class="text-xs text-muted">
+      10–500 caracteres, una sola línea. La decisión se aplicará a la versión
+      {{org.version}}.
+    </p>
+    @if(responsibleForm.controls.reason.invalid&&responsibleForm.controls.reason.touched){
+    <p class="text-sm text-danger">Escribe un motivo válido.</p>
+    }<button
+      type="submit"
+      [disabled]="store.busy()||(org.status!=='pending'&&selected()?.id===org.responsibleUserId)||(org.status==='pending'&&store.missing().length>0)"
+      class="min-h-12 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+    >
+      {{store.busy()?'Aplicando…':org.status==='pending'?'Confirmar
+      aprobación':'Confirmar nuevo responsable'}}
+    </button>
+  </form>
+</section>
+} @if(org.status==='pending'){
+<div class="mt-7">
+  <app-organization-decision
+    id="organization-reject"
+    title="Rechazar solicitud"
+    description="La organización podrá corregir su perfil y volver a enviarlo. Explica qué debe revisar."
+    buttonLabel="Confirmar rechazo"
+    reasonLabel="Motivo de rechazo"
+    [danger]="true"
+    [context]="context()"
+    [busy]="store.busy()||store.refreshRequired()"
+    (confirmed)="decide('reject',$event)"
+  />
+</div>
+} @if(org.status==='active'||org.status==='suspended'){
+<div class="mt-7">
+  <app-organization-decision
+    id="organization-status"
+    [title]="org.status==='active'?'Suspender organización':'Reactivar organización'"
+    [description]="org.status==='active'?'Se bloquearán los permisos operativos de sus miembros. Sus cuentas y membresías se conservarán.':'Se recuperarán los permisos operativos si el perfil y la cuenta responsable siguen siendo elegibles.'"
+    [buttonLabel]="org.status==='active'?'Confirmar suspensión':'Confirmar reactivación'"
+    reasonLabel="Motivo del cambio de estado"
+    [danger]="org.status==='active'"
+    [context]="context()"
+    [busy]="store.busy()||store.refreshRequired()"
+    (confirmed)="status($event)"
+  />
+</div>
+} @if(org.status!=='deleted'){
+<div class="mt-7">
+  <app-destructive-action
+    id="organization-archive"
+    title="Archivar organización"
+    reasonLabel="Motivo de archivo de organización"
+    description="Retira definitivamente el acceso operativo y anonimiza el perfil. Conserva las referencias e historial; no puede reactivarse."
+    [context]="context()"
+    [blocked]="store.busy()||store.refreshRequired()"
+    (confirmed)="store.execute({kind:'archive',organizationId:org.id,body:{reason:$event,expectedVersion:org.version}})"
+  />
+</div>
+} @if(org.status==='deleted'){
+<p class="mt-7 rounded-xl bg-paper p-5 text-sm text-muted">
+  La organización está archivada. No puede revisarse ni reactivarse.
+</p>
+} }@else{
+<h1 class="text-2xl font-semibold">No pudimos cargar la revisión</h1>
+<a
+  routerLink="/organizaciones"
+  class="mt-4 inline-flex min-h-11 items-center text-primary"
+  >Volver a organizaciones</a
+>} @if(store.refreshRequired()){
+<p role="status" class="mt-5 text-sm">
+  Actualiza la organización antes de repetir una acción.
+</p>
+<button
+  type="button"
+  (click)="store.load(organizationId())"
+  [disabled]="store.busy()"
+  class="mt-3 min-h-11 rounded-xl border border-line px-4"
+>
+  Actualizar organización</button
+>}

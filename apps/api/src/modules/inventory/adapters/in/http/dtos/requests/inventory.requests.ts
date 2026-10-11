@@ -74,3 +74,24 @@ export class AvailabilityQueryDto extends createZodDto(
       }),
   }),
 ) {}
+
+export class InventoryListDto extends createZodDto(
+  z.strictObject({
+    variantId: z.uuid().optional().meta({
+      description: 'Optional exact variant UUID for a scoped detail lookup.',
+    }),
+    organizationId: z.uuid().meta({
+      description:
+        'Exact owning active business UUID; inventory.manage required in this scope.',
+    }),
+    search: z
+      .string()
+      .trim()
+      .max(100)
+      .regex(/^[^\p{Cc}]*$/u)
+      .optional(),
+    status: z.enum(['active', 'archived']).optional(),
+    page: z.coerce.number().int().min(1).max(10000).default(1),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  }),
+) {}

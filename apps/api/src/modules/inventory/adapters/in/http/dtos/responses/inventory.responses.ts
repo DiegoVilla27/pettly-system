@@ -73,3 +73,32 @@ export class AvailabilityResponseDto extends createZodDto(
       .max(50),
   }),
 ) {}
+
+export class InventoryListResponseDto extends createZodDto(
+  z.strictObject({
+    items: z
+      .array(
+        z.strictObject({
+          id,
+          organizationId: id,
+          productId: id,
+          productName: z.string().min(2).max(150),
+          sku: z.string().max(64),
+          productStatus: z.enum([
+            'draft',
+            'pending',
+            'published',
+            'rejected',
+            'paused',
+            'archived',
+          ]),
+          variantStatus: z.enum(['active', 'archived']),
+          stock,
+        }),
+      )
+      .max(50),
+    total: integer.nonnegative(),
+    page: integer.positive(),
+    limit: integer.positive(),
+  }),
+) {}

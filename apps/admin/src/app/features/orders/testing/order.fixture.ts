@@ -1,0 +1,68 @@
+import type { OrderDto } from '../models/order';
+import { mapOrder } from '../mappers/orders.mapper';
+const id = (n: number) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+export const orderDto: OrderDto = {
+  id: id(1),
+  buyerId: id(2),
+  organizationId: id(3),
+  quoteId: id(4),
+  status: 'awaiting_payment',
+  version: 1,
+  totalMinor: 1100050,
+  currency: 'COP',
+  paymentId: null,
+  paidAt: null,
+  createdAt: '2026-10-10T12:00:00.000Z',
+  updatedAt: '2026-10-10T12:00:00.000Z',
+  expiresAt: '2026-10-10T12:30:00.000Z',
+  snapshot: {
+    organizationId: id(3),
+    currency: 'COP',
+    lines: [
+      {
+        variantId: id(5),
+        productId: id(6),
+        productVersion: 1,
+        name: 'Alimento Aurora',
+        sku: 'AUR-01',
+        attributes: { size: 'Grande' },
+        quantity: 1,
+        unitPriceMinor: 1000050,
+        subtotalMinor: 1000050,
+        taxMinor: 0,
+        holdId: id(7),
+      },
+    ],
+    fulfillment: 'delivery',
+    contact: {
+      recipient: 'Carlos Aurora',
+      phone: '+573001234567',
+      countryCode: 'CO',
+      city: 'Bogotá',
+      address: 'Calle 12 número 34',
+      addressLine2: null,
+      postalCode: null,
+    },
+    pickupAddress: null,
+    subtotalMinor: 1000050,
+    shippingMinor: 100000,
+    taxMinor: null,
+    totalMinor: 1100050,
+    taxMode: 'included',
+    collector: 'platform',
+    terms: 'Condiciones originales aceptadas.',
+    policyVersion: 1,
+    commission: {
+      policyId: 'test-10',
+      rateBasisPoints: 1000,
+      base: 'product_subtotal',
+      baseMinor: 1000050,
+      platformMinor: 100005,
+      sellerMinor: 1000045,
+      totalMinor: 1100050,
+      processingFeeBearer: 'seller',
+    },
+  },
+};
+export const order = mapOrder(orderDto);

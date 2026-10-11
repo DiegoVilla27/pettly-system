@@ -87,3 +87,7 @@ export class CredentialsFilterDto extends createZodDto(
     status: z.enum(CREDENTIAL_STATUSES).optional(),
   }),
 ) {}
+
+export class EligibleCredentialsDto extends createZodDto(
+  CredentialPageDto.schema.extend({ organizationId: z.uuid() }),
+) {}

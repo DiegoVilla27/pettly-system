@@ -91,6 +91,24 @@ export class PrismaOrdersRepository implements OrdersRepository {
                 ? { organizationId: q.organizationId }
                 : { buyerId: q.actorId }),
               ...(q.status ? { status: q.status } : {}),
+              ...(q.search
+                ? {
+                    OR: [
+                      ...['recipient', 'city'].map((field) => ({
+                        snapshot: {
+                          path: ['contact', field],
+                          string_contains: q.search!.replace(/[\\%_]/g, '\\$&'),
+                          mode: Prisma.QueryMode.insensitive,
+                        },
+                      })),
+                      ...(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                        q.search,
+                      )
+                        ? [{ id: q.search }]
+                        : []),
+                    ],
+                  }
+                : {}),
             };
             const [rows, total] = await Promise.all([
               this.db.client.order.findMany({

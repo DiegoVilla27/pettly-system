@@ -1,6 +1,6 @@
 # Catalog module
 
-Updated: 2026-10-08. Business product taxonomy, variants, sanitized photographs and reviewed public browsing. See [Inventory](inventory.md), [Media](media.md), [Organizations](organizations.md) and [DESIGN](../DESIGN.md).
+Updated: 2026-10-10. Business product taxonomy, variants, sanitized photographs and reviewed public browsing. See [Inventory](inventory.md), [Media](media.md), [Organizations](organizations.md) and [DESIGN](../DESIGN.md).
 
 ## Purpose, architecture and ownership
 
@@ -50,29 +50,31 @@ PostgreSQL also protects company/SKU uniqueness, context foreign keys, compatibl
 
 Private routes require current active verified bearer identity. Prefixes below include `/api`:
 
-| Route                                                           | Contract                                                                                                       |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| GET /catalog/categories                                         | Active taxonomy; anonymous, maximum 1000.                                                                      |
-| GET /catalog/products                                           | Public search and pagination.                                                                                  |
-| GET /catalog/products/{productId}                               | Available reviewed detail with safe product fields, active variants and photos.                                |
-| GET /catalog/products/{productId}/photos/{mediaId}              | Currently authorized public sanitized JPEG.                                                                    |
-| GET, POST /catalog/admin/categories                             | Superadmin full taxonomy or `{name,slug,description?,reason}` creation.                                        |
-| PATCH /catalog/admin/categories/{categoryId}                    | `{profile:{name?,slug?,description?,status?},reason,expectedVersion}`.                                         |
-| GET /catalog/admin/categories/{categoryId}/audit                | Superadmin paginated immutable taxonomy administration history.                                                |
-| GET, POST /catalog/admin/products                               | Scoped private list or `{organizationId,profile:{name,description,brand?,categoryId},currency?,reason}` draft. |
-| GET, PATCH /catalog/admin/products/{productId}                  | Private detail or `{profile,reason,expectedVersion}`.                                                          |
-| DELETE /catalog/admin/products/{productId}                      | `{reason,expectedVersion}` terminal archive; product response.                                                 |
-| POST /catalog/admin/products/{productId}/submit                 | `{reason,expectedVersion}` pending review.                                                                     |
-| POST /catalog/admin/products/{productId}/review                 | Global outside moderator `{approved,reason,expectedVersion}`.                                                  |
-| POST /catalog/admin/products/{productId}/pause                  | `{reason,expectedVersion}` published → paused.                                                                 |
-| GET /catalog/admin/moderation/products                          | Global moderation queue.                                                                                       |
-| POST /catalog/admin/products/{productId}/variants               | `{profile:{sku,priceMinor,attributes?},reason,expectedVersion}`.                                               |
-| PATCH /catalog/admin/products/{productId}/variants/{variantId}  | `{profile:{sku?,priceMinor?,attributes?},reason,expectedVersion}`.                                             |
-| DELETE /catalog/admin/products/{productId}/variants/{variantId} | `{reason,expectedVersion}`; permanent variant archive.                                                         |
-| POST /catalog/admin/products/{productId}/photos                 | Multipart file, reason and expectedVersion; 5 MiB input limit.                                                 |
-| GET /catalog/admin/products/{productId}/photos/{mediaId}        | Owning active-business permission and exact resource binding.                                                  |
-| DELETE /catalog/admin/products/{productId}/photos/{mediaId}     | `{reason,expectedVersion}` detach/purge and withdraw publication.                                              |
-| GET /catalog/admin/products/{productId}/audit                   | Scoped immutable audit list.                                                                                   |
+| Route                                                               | Contract                                                                                                       |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| GET /catalog/categories                                             | Active taxonomy; anonymous, maximum 1000.                                                                      |
+| GET /catalog/products                                               | Public search and pagination.                                                                                  |
+| GET /catalog/products/{productId}                                   | Available reviewed detail with safe product fields, active variants and photos.                                |
+| GET /catalog/products/{productId}/photos/{mediaId}                  | Currently authorized public sanitized JPEG.                                                                    |
+| GET, POST /catalog/admin/categories                                 | Superadmin full taxonomy or `{name,slug,description?,reason}` creation.                                        |
+| PATCH /catalog/admin/categories/{categoryId}                        | `{profile:{name?,slug?,description?,status?},reason,expectedVersion}`.                                         |
+| GET /catalog/admin/categories/{categoryId}/audit                    | Superadmin paginated immutable taxonomy administration history.                                                |
+| GET, POST /catalog/admin/products                                   | Scoped private list or `{organizationId,profile:{name,description,brand?,categoryId},currency?,reason}` draft. |
+| GET, PATCH /catalog/admin/products/{productId}                      | Private detail or `{profile,reason,expectedVersion}`.                                                          |
+| DELETE /catalog/admin/products/{productId}                          | `{reason,expectedVersion}` terminal archive; product response.                                                 |
+| POST /catalog/admin/products/{productId}/submit                     | `{reason,expectedVersion}` pending review.                                                                     |
+| POST /catalog/admin/products/{productId}/review                     | Global outside moderator `{approved,reason,expectedVersion}`.                                                  |
+| POST /catalog/admin/products/{productId}/pause                      | `{reason,expectedVersion}` published → paused.                                                                 |
+| GET /catalog/admin/moderation/products                              | Global pending queue with validated search, category, company and optional price filters.                      |
+| GET /catalog/admin/moderation/products/{productId}                  | Independent reviewer preview; pending product and active business, without supplier management.                |
+| GET /catalog/admin/moderation/products/{productId}/photos/{mediaId} | Independent reviewer authenticated JPEG; current pending eligibility and exact attachment.                     |
+| POST /catalog/admin/products/{productId}/variants                   | `{profile:{sku,priceMinor,attributes?},reason,expectedVersion}`.                                               |
+| PATCH /catalog/admin/products/{productId}/variants/{variantId}      | `{profile:{sku?,priceMinor?,attributes?},reason,expectedVersion}`.                                             |
+| DELETE /catalog/admin/products/{productId}/variants/{variantId}     | `{reason,expectedVersion}`; permanent variant archive.                                                         |
+| POST /catalog/admin/products/{productId}/photos                     | Multipart file, reason and expectedVersion; 5 MiB input limit.                                                 |
+| GET /catalog/admin/products/{productId}/photos/{mediaId}            | Owning active-business permission and exact resource binding.                                                  |
+| DELETE /catalog/admin/products/{productId}/photos/{mediaId}         | `{reason,expectedVersion}` detach/purge and withdraw publication.                                              |
+| GET /catalog/admin/products/{productId}/audit                       | Scoped immutable audit list.                                                                                   |
 
 POST returns 201; GET/PATCH/DELETE return 200. Detail/variant/photo changes return documented strict response objects. Pagination defaults page=1/limit=20, maximum page=10000/limit=50. Product filters: name search, categoryId, organizationId, brand, currency, minPriceMinor/maxPriceMinor. Price filters require currency and min≤max; private list additionally requires organizationId and allows status. Public list checks current organizations in a bounded batch, returns no misleading eligible total and supplies nextPage; filtered pages can be short/empty and clients continue until null. Private lists expose total. Public product reads never expose creator/reviewer IDs/reasons, company private profile, stock ledger or customer data.
 
@@ -95,3 +97,17 @@ Tests cover domain money/attributes, category terminal states, moderation/review
 Delivery verification (2026-10-08): 32 unit tests and 40 isolated HTTP scenarios (41 test results including the suite) passed, with API/worker lint, typecheck/build, hexagonal dependency checks and OpenAPI export (110 operations, including 24 Catalog and 8 Inventory). Coverage includes several expiry movements in one batch and rejection of deletion/reset of a zero stock balance with history. Fixtures run against temporary PostgreSQL/Redis/Mailpit and do not create real business records.
 
 Local deployment verification: migration 008 is applied only to pettly_db on shared-network. Eight tables, ten guards/constraint triggers and unique idempotency/version indexes were checked. The rebuilt API is healthy, worker updated, and live Swagger exposes 110 operations. Anonymous category/product/availability reads return 200 with no-store; private catalog/inventory reads without credentials return 401. Deployment verification used read-only requests and created no real products, movements or reservations.
+
+## Backoffice review preview
+
+The Angular implementation is documented in [Backoffice catalog](backoffice-catalog.md). Global independent reviewers can use `GET /api/catalog/admin/moderation/products/:productId` (`getProductReviewPreview`) and `GET /api/catalog/admin/moderation/products/:productId/photos/:mediaId` (`getProductReviewPhoto`). These are dedicated review reads, requiring `moderation.publications.review`, an active business, pending product and an actor who is neither creator nor any owning-company member. Preview includes bounded variants and attached media references without granting supplier management or exposing stock/private company data. Each read locks actor, organization and product and rechecks current state. Exact attachment is required for JPEG; an unrelated UUID returns 404, departed queue/inactive business returns 409 and own-team review returns 403. Private responses use no-store.
+
+The existing moderation queue now accepts the public catalog query DTO's validated search, category/company, brand, currency and bounded price filters, while always forcing pending status. API schema export asserts correct nullable string reflection for category description, product brand and review reason; existing domain limits and database shape are unchanged. The two new read endpoints need no migration. Categories, audited profile/status edits, queue and review are available in Angular; supplier CRUD and Inventory interfaces remain separate work.
+
+## Inventory directory port
+
+Catalog now exposes the framework-free InventoryCatalog port for authorized Inventory application reads. It returns a bounded, company-scoped variant page with product/variant IDs, product name, SKU and states, optionally narrowed by exact variant, SKU/product search and active/archived variant status. Its owning Prisma adapter queries Catalog's own tables; Inventory never queries those tables or imports that adapter. Inventory authorizes inventory.manage in the active business before invoking the trusted port and composes its own stock projection. This adds no public Catalog endpoint or database migration. See [Inventory](inventory.md) and [Backoffice inventory](backoffice-inventory.md).
+
+## Company product management UI
+
+Business product operations are available in `/productos`: scoped lists, profile, COP variants, private photos, publication submission, pause/archive and audit. Independent moderation remains in `/catalogo`; inventory keeps stock ownership. See [Backoffice products](backoffice-products.md) for permissions, architecture, currency constraints and manual checks.

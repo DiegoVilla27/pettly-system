@@ -1,6 +1,6 @@
 # Inventory module
 
-Updated: 2026-10-08. Durable variant balances, immutable movements and expiring business stock reservations. See [Catalog](catalog.md), [Authorization](authorization.md) and [DESIGN](../DESIGN.md).
+Updated: 2026-10-10. Durable variant balances, immutable movements and expiring business stock reservations. See [Catalog](catalog.md), [Authorization](authorization.md) and [DESIGN](../DESIGN.md).
 
 ## Purpose and architecture
 
@@ -83,3 +83,11 @@ Delivery verification (2026-10-08): 32 unit tests and 40 isolated HTTP scenarios
 Local deployment verification: migration 008 is applied only to pettly_db on shared-network. Eight tables, ten guards/constraint triggers and unique idempotency/version indexes were checked. The rebuilt API is healthy, worker updated, and live Swagger exposes 110 operations. Anonymous category/product/availability reads return 200 with no-store; private catalog/inventory reads without credentials return 401. Deployment verification used read-only requests and created no real products, movements or reservations.
 
 Cart/Orders delivery (2026-10-09): Hold responses now include nullable orderId. Migration 009 adds the Order FK and indexed order lookup, immutable order binding and deferred complete order-line/status checks. Null actors are permitted for order-linked automatic release/consume; unbound operational system consume/release is rejected by PostgreSQL. OrderStock honors historical accepted reservations on payment even when the catalog is withdrawn; new holds still require current publication. Order-specific deadlines/recovery and transactional contracts are described in Orders.
+
+## Private company directory and Angular delivery
+
+`GET /api/inventory/variants` (`listManagedInventory`) is an additive authenticated directory. Required organizationId must identify an active business authorized for inventory.manage. Optional search matches SKU/product name case-insensitively; status filters active/archived variants, page defaults to one (maximum 10000), limit defaults to 20 (maximum 50), and variantId narrows to an exact variant within that company. It returns a bounded page of product/variant identity/state plus stock and total/page/limit. Archived history is included; new variants have virtual zero/version one. Global moderators without eligible membership and inactive businesses are forbidden. Private responses use no-store.
+
+The new InventoryCatalog public application port supplies Catalog's minimal variant directory; only Catalog's adapter accesses its tables. Inventory reads its own balances and only due active holds in batches, after actor/company/products/taxonomy/stock locks. One cutoff controls page expiry, which uses existing transactional append-only movements. No per-row stock or hold query is issued; actual expiry updates are bounded by the page and existing holds. No migration or Redis cache is added. Application query/results/ports and separate strict request/response DTOs preserve the hexagonal boundaries and English Swagger.
+
+Angular now implements private company selection, SKU/product search, pagination, balances, physical receipts/issues/signed adjustments and immutable ledger. Expected stock version and UUID command key are retained for explicit safe retry after uncertain transport/server failures. Company isolation, terminal read-only variants and history remain authoritative in the API. Holds/OrderStock are not exposed as warehouse payment controls. The intent survives only while its page/store exists, with leave/reload warnings; cross-restart recovery requires inspecting current stock/history. Full architecture, roles, routes, limits and manual checks are in [Backoffice inventory](backoffice-inventory.md).

@@ -1,0 +1,70 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <fieldset [disabled]="busy() || blocked()">
+    <legend class="text-lg font-semibold">
+      {{ publication() ? 'Editar ficha pública' : 'Ficha pública de adopción' }}
+    </legend>
+    <p class="mt-3 text-sm text-muted">
+      Localidad en Colombia. No incluyas microchip, notas clínicas privadas ni
+      direcciones. Los cambios reales requieren una nueva revisión y pueden
+      exigir renovar el consentimiento de solicitantes existentes.
+    </p>
+    @for (f of fields; track f.key) {
+      <label
+        [for]="'publication-' + f.key"
+        class="mt-4 mb-2 block text-sm font-semibold"
+        >{{ f.label }} *</label
+      >
+      <textarea
+        [id]="'publication-' + f.key"
+        [formControlName]="f.key"
+        [rows]="f.rows"
+        [maxlength]="f.max"
+        [attr.aria-invalid]="invalid(f.key)"
+        [attr.aria-describedby]="'publication-help-' + f.key"
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+      ></textarea>
+      <p [id]="'publication-help-' + f.key" class="mt-1 text-xs text-muted">
+        Entre 2 y {{ f.max }} caracteres, sin saltos de línea.
+      </p>
+    }
+    <label
+      for="publication-reason"
+      class="mt-4 mb-2 block text-sm font-semibold"
+      >Motivo del registro o cambio *</label
+    >
+    <textarea
+      id="publication-reason"
+      formControlName="reason"
+      maxlength="500"
+      rows="2"
+      [attr.aria-invalid]="invalid('reason')"
+      class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+    ></textarea>
+    <p class="mt-1 text-xs text-muted">
+      Entre 10 y 500 caracteres; sin información privada.
+    </p>
+    <label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+      ><input
+        type="checkbox"
+        formControlName="confirm"
+        class="size-5 accent-primary"
+        [attr.aria-invalid]="invalid('confirm')"
+      />Confirmo la ficha pública y el refugio seleccionado</label
+    >
+    @if (error()) {
+      <p role="alert" class="mt-3 text-sm text-danger">{{ error() }}</p>
+    }
+    <button
+      type="submit"
+      class="mt-5 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-strong disabled:opacity-50"
+    >
+      {{
+        busy()
+          ? 'Guardando…'
+          : publication()
+            ? 'Guardar ficha'
+            : 'Crear publicación'
+      }}
+    </button>
+  </fieldset>
+</form>

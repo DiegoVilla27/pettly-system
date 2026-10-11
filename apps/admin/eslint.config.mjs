@@ -8,6 +8,7 @@ export default [
   {
     files: ['**/*.ts'],
     rules: {
+      '@angular-eslint/prefer-on-push-component-change-detection': 'error',
       '@angular-eslint/directive-selector': [
         'error',
         {

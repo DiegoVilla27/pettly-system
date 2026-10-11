@@ -1,5 +1,7 @@
 import type { StockState, HoldState, Movement } from '../../results/inventory';
 export interface InventoryWork {
+  stocks(ids: string[]): Promise<StockState[]>;
+  dueHolds(ids: string[], now: Date): Promise<HoldState[]>;
   lock(key: string): Promise<void>;
   stock(variantId: string): Promise<StockState | null>;
   availability(

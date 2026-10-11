@@ -507,6 +507,18 @@ export class ServicesHandlers implements ServicesUseCases {
       return tx.resources(org);
     });
   }
+  resourceAudits(id: string, actor: string, page: number, limit: number) {
+    return this.repo.run(async (tx) => {
+      const r = await tx.resource(id);
+      if (!r) throw missing();
+      await this.auth.requirePermission(
+        actor,
+        'services.manage',
+        r.organizationId,
+      );
+      return tx.resourceAudits(id, page, limit);
+    });
+  }
   audits(id: string, actor: string, page: number, limit: number) {
     return this.repo.run(async (tx) => {
       const s = await tx.service(id);

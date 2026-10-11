@@ -156,3 +156,5 @@ Animals, Media and Adoptions provide personal/shelter records, sanitized private
 Catálogo e inventario de la API: [Catalog](docs/catalog.md) y [Inventory](docs/inventory.md). Swagger local: http://localhost:3100/api/docs.
 
 Cart and checkout/order API: [Cart](docs/cart.md), [Orders](docs/orders.md). One-company persistent cart, explicit versioned commercial settings, immutable five-minute quotes and atomic fifteen-minute unpaid order reservations. Cancellation/expiry releases stock; fulfillment requires verified payment through the internal future Payments integration. No real payment provider is configured. Swagger: http://localhost:3100/api/docs.
+
+Gestión de productos por empresa en el backoffice: [documentación](docs/backoffice-products.md), ruta `/productos`.

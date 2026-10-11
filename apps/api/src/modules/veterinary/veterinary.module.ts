@@ -1,3 +1,8 @@
+import { AuthorizationModule } from '../authorization/authorization.module';
+import {
+  AUTHORIZATION,
+  type Authorization,
+} from '../authorization/application/ports/in/authorization';
 import { ServicesReadModule } from '../services/services-read.module';
 import {
   SERVICE_RESOURCE_DIRECTORY,
@@ -32,7 +37,13 @@ import { VeterinaryHandlers } from './application/handlers/veterinary.handlers';
 import { PrismaCredentialsRepository } from './adapters/out/persistence/prisma-credentials-repository';
 import { VeterinaryController } from './adapters/in/http/controllers/veterinary.controller';
 @Module({
-  imports: [UsersModule, OrganizationsModule, MediaModule, ServicesReadModule],
+  imports: [
+    UsersModule,
+    OrganizationsModule,
+    MediaModule,
+    ServicesReadModule,
+    AuthorizationModule,
+  ],
   controllers: [VeterinaryController],
   providers: [
     { provide: CREDENTIALS_REPOSITORY, useClass: PrismaCredentialsRepository },
@@ -46,6 +57,7 @@ import { VeterinaryController } from './adapters/in/http/controllers/veterinary.
         clock: Clock,
         entropy: Entropy,
         schedules: ServiceResourceDirectory,
+        authorization: Authorization,
       ) =>
         new VeterinaryHandlers(
           repo,
@@ -55,6 +67,7 @@ import { VeterinaryController } from './adapters/in/http/controllers/veterinary.
           clock,
           entropy,
           schedules,
+          authorization,
         ),
       inject: [
         CREDENTIALS_REPOSITORY,
@@ -64,6 +77,7 @@ import { VeterinaryController } from './adapters/in/http/controllers/veterinary.
         CLOCK,
         ENTROPY,
         SERVICE_RESOURCE_DIRECTORY,
+        AUTHORIZATION,
       ],
     },
     { provide: VETERINARY_ELIGIBILITY, useExisting: VETERINARY_USE_CASES },

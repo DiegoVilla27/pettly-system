@@ -531,8 +531,7 @@ export class OrganizationLifecycleHandlers {
   audits(query: OrganizationPageQuery) {
     this.page(query.page, query.limit);
     return this.repository.run(async (work) => {
-      requireSuperAdmin(await this.actor(query.actorId));
-      await this.load(work, query.organizationId);
+      await this.manager(work, query.actorId, query.organizationId, false);
       return work.audits(query.organizationId, query.page, query.limit);
     });
   }

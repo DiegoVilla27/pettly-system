@@ -1,3 +1,5 @@
+import type { Authorization } from '../../../authorization/application/ports/in/authorization';
+import { CredentialsQuery as OwnedQuery } from '../queries/credential.queries';
 import type { ServiceResourceDirectory } from '../../../services/application/ports/in/service-resource-directory';
 import { ApplicationError } from '../../../../shared/domain/application-error';
 import {
@@ -27,6 +29,7 @@ import type {
 import type {
   CredentialQuery,
   CredentialsQuery,
+  EligibleCredentialsQuery,
 } from '../queries/credential.queries';
 export class VeterinaryHandlers
   implements VeterinaryUseCases, VeterinaryEligibility
@@ -39,6 +42,7 @@ export class VeterinaryHandlers
     private readonly clock: Clock,
     private readonly entropy: Entropy,
     private readonly schedules: ServiceResourceDirectory,
+    private readonly authorization: Authorization,
   ) {}
   private async actor(id: string) {
     const u = await this.users.findById(id);
@@ -269,6 +273,90 @@ export class VeterinaryHandlers
     return this.repo.run(async (tx) => {
       requireSuperAdmin(await this.actor(q.actorId));
       return tx.list(q);
+    });
+  }
+  mine(q: CredentialsQuery) {
+    return this.repo.run(async (tx) => {
+      await this.actor(q.actorId);
+      return tx.list(
+        new OwnedQuery(
+          q.actorId,
+          q.page,
+          q.limit,
+          q.organizationId,
+          q.status,
+          q.actorId,
+        ),
+      );
+    });
+  }
+  eligibleList(q: EligibleCredentialsQuery) {
+    return this.repo.run(async (tx) => {
+      await this.authorization.requirePermission(
+        q.actorId,
+        'services.manage',
+        q.organizationId,
+      );
+      const org = await this.orgs.findOrganization(q.organizationId);
+      if (
+        !org ||
+        org.status !== 'active' ||
+        org.type !== 'business' ||
+        org.countryCode !== 'CO'
+      )
+        throw new ApplicationError(
+          'FORBIDDEN',
+          'An active Colombian business is required.',
+        );
+      const now = this.clock.now();
+      const candidates = await tx.list(
+        new OwnedQuery(
+          q.actorId,
+          q.page,
+          q.limit,
+          q.organizationId,
+          'approved',
+          undefined,
+          now,
+        ),
+      );
+      const items = [];
+      for (const s of candidates.items) {
+        const professional = await this.users.findById(s.professionalId);
+        const memberships = await this.orgs.membershipsForUser(
+          s.professionalId,
+        );
+        const resource = await this.schedules.find(s.resourceId);
+        if (
+          s.organizationId !== q.organizationId ||
+          !currentCredential(s, now) ||
+          !professional ||
+          professional.status !== 'active' ||
+          !professional.emailVerifiedAt ||
+          !memberships.some(
+            (m) =>
+              m.organizationId === q.organizationId &&
+              ['business_admin', 'business_operator'].includes(m.role),
+          ) ||
+          !resource ||
+          resource.organizationId !== q.organizationId ||
+          resource.status !== 'active' ||
+          resource.kind !== 'appointment' ||
+          resource.capacity !== 1
+        )
+          continue;
+        items.push({
+          id: s.id,
+          organizationId: s.organizationId,
+          professionalId: s.professionalId,
+          professionalName: [professional.name, professional.lastName]
+            .filter(Boolean)
+            .join(' '),
+          resourceId: s.resourceId,
+          verifiedUntil: s.verifiedUntil as Date,
+        });
+      }
+      return { items, candidateTotal: candidates.total };
     });
   }
   async document(q: CredentialQuery, id: string) {

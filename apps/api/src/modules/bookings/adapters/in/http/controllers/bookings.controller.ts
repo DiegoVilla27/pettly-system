@@ -211,7 +211,7 @@ export class ManagedBookingsController {
     operationId: 'listManagedBookings',
     summary: 'Search bookings in your active business',
     description:
-      'Requires scoped bookings.manage, explicit organizationId and bounded pagination. Includes necessary accepted contact/pet identity for service delivery; no cross-company private reads.',
+      'Requires scoped bookings.manage, explicit organizationId and bounded pagination. Optional search matches accepted service, pet or contact names case-insensitively. Includes necessary accepted contact/pet identity for service delivery; no cross-company private reads.',
   })
   @ApiOkResponse({ type: S.BookingsResponseDto })
   @ZodSerializerDto(S.BookingsResponseDto)
@@ -227,6 +227,7 @@ export class ManagedBookingsController {
         q.organizationId,
         q.status,
         q.serviceId,
+        q.search,
       ),
     );
     return {

@@ -1,3 +1,7 @@
+import {
+  INVENTORY_CATALOG,
+  type InventoryCatalog,
+} from '../catalog/application/ports/in/inventory-catalog';
 import { Module } from '@nestjs/common';
 import { CatalogModule } from '../catalog/catalog.module';
 import { AuthorizationModule } from '../authorization/authorization.module';
@@ -41,13 +45,16 @@ import { HoldExpiration } from './adapters/in/scheduling/hold-expiration';
         auth: Authorization,
         clock: Clock,
         entropy: Entropy,
-      ) => new InventoryHandlers(repo, catalog, auth, clock, entropy),
+        directory: InventoryCatalog,
+      ) =>
+        new InventoryHandlers(repo, catalog, auth, clock, entropy, directory),
       inject: [
         INVENTORY_REPOSITORY,
         CATALOG_ACCESS,
         AUTHORIZATION,
         CLOCK,
         ENTROPY,
+        INVENTORY_CATALOG,
       ],
     },
     { provide: ORDER_STOCK, useExisting: INVENTORY_USE_CASES },

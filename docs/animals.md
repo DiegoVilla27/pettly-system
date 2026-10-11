@@ -99,3 +99,7 @@ Local deployment verification: migration 007 is applied to pettly_db on shared-n
 ## Booking boundary
 
 The public AnimalsBooking port exposes forBooking(actorId,animalId) and only id/name/species. It joins the shared transaction, locks animal identity and requires an active personal pet whose ownerUserId is exactly the customer; company/refuge animals and superadmin ownership bypass are excluded. Bookings separately checks account eligibility and service species policy. No healthNotes, microchip, specialNeeds, photos or other clinical profile is copied into a booking. Current ownership/status is rechecked for creation/rescheduling; cancellation and accepted history remain available without requiring the pet to remain bookable. Tests verify foreign-pet rejection and no clinical text in reservation responses. Existing adoption/catalog contracts remain compatible.
+
+## Shelter backoffice
+
+The Angular shelter workflow implements explicit organization-scoped listing, create/edit, private photographs, death/archive decisions and immutable history. It does not expose personal customer animals or assign adopted status directly. See [Backoffice Animals](backoffice-animals.md) for routes, permissions, input validation and uncertainty handling. Nullable vaccination/sterilization declarations are documented in OpenAPI as `boolean | null`; database/runtime behavior is unchanged.

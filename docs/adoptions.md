@@ -1,6 +1,6 @@
 # Adoptions module
 
-Updated: 2026-10-08. Implements reviewed publications, safe public browse/photos, consented applications, shelter decisions and explicit adoption completion. Related: [Animals](animals.md), [Media](media.md), [Organizations](organizations.md), [Authorization](authorization.md), [DESIGN](../DESIGN.md).
+Updated: 2026-10-10. Implements reviewed publications, safe public browse/photos, consented applications, shelter decisions and explicit adoption completion. Related: [Animals](animals.md), [Media](media.md), [Organizations](organizations.md), [Authorization](authorization.md), [DESIGN](../DESIGN.md).
 
 ## Purpose, boundaries and architecture
 
@@ -122,7 +122,7 @@ Reason is 10–500 characters; expectedVersion must be current. Errors: 400 inva
 
 Lock order is sorted actor/applicant users, organization, animal, publication, then request when needed. New submissions, reviews, withdrawals, photo changes and completion serialize on their resource context. Shared Database propagates transactions into public feature ports, so a failed Adoptions audit rolls back Animals state/audit too. Unique database constraints back concurrency even with duplicate submissions/approvals.
 
-Redis supplies existing distributed route limits. Public data/photo responses use no-store and live database eligibility, without a stale cached authorization decision. There is no object-storage/CDN backend, interview scheduling, payments, document verification, customer contact UI or post-adoption follow-up implementation in this delivery. Web/backoffice/mobile remain consumer bases; these are API workflows testable through Swagger.
+Redis supplies existing distributed route limits. Public data/photo responses use no-store and live database eligibility, without a stale cached authorization decision. There is no object-storage/CDN backend, interview scheduling, adoption payments, document verification or post-adoption follow-up implementation in this delivery. The Angular backoffice now manages publications and moderation as documented below. The Angular applicant-review/handover UI is implemented in [Backoffice adoption requests](backoffice-adoption-requests.md); public web/mobile adoption flows remain planned.
 
 Tests cover safe projections, moderation queue/permissions, incomplete contact, explicit consent, duplicate submissions, changed conditions, cross-user/entity access, suspended visibility/withdrawal, photo detach, selected-applicant concurrency, completion rollback across three features, one completion winner, other-request closure and immutable audit. Infrastructure is isolated and removed after tests.
 
@@ -133,3 +133,13 @@ Local deployment verification: migration 007 is applied to pettly_db on shared-n
 ## Notifications integration — 2026-10-09
 
 Solicitud enviada, decisiones/retiro/cierre y entrega confirmada publican un evento mínimo en Notifications para solicitante y responsable actual del refugio. Inbox/outbox se guardan en la transacción original; fallo revierte la operación. No se incluyen respuestas privadas ni mensajes; correo opcional adoptionsEmail y bandeja obligatoria. No se notifica al publicar/editar una ficha. Ver [Notifications](notifications.md).
+
+## Publications backoffice — 2026-10-10
+
+Angular implements shelter draft preparation, submission, independent moderation with safe snapshot photo preview, pause/archive and operational audit. Requests and explicit handover UI are implemented as documented in [Backoffice adoption requests](backoffice-adoption-requests.md); public client/mobile adoption screens remain planned. See [Backoffice Adoptions](backoffice-adoptions.md).
+
+New authenticated GET `/api/adoptions/publications/{publicationId}/manage/photos/{mediaId}` (`getManagedAdoptionPhoto`) permits global reviewer or authorized shelter manager to visually inspect a submitted snapshot before publication. Active verified identity, organization/animal eligibility and membership of the exact photo in both snapshot/current attachment list are required. Uses existing application ports and locks, returns no-store JPEG; detached/unavailable 404, unauthorized 401/403. Global moderation access does not broaden applicant or operational audit access. No database migration. Nullable review reasons now reflect string/null correctly in Swagger; runtime/persistence semantics remain unchanged.
+
+## Angular shelter request management
+
+Shelter-scoped request lists, consented contact detail, review/approval/rejection and separate explicit physical-handover confirmation now consume the existing API. Typed DTOs, Zod Mini projections, SignalStores, OnPush/zoneless and concurrency/access-loss protection are described in [Backoffice adoption requests](backoffice-adoption-requests.md). No new database migration or API operation is required.

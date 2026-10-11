@@ -96,3 +96,7 @@ docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.11 -color
 ## API architecture and contracts
 
 Repository checks run `pnpm check:architecture` to reject framework imports in domain/application, reversed dependencies and access to another module’s internals. API build exports and checks OpenAPI, retaining it for seven days. Worker changes trigger the API pipeline and Docker checks; the API image contains the worker executable. The reusable pipeline and consolidated quality gate remain in place.
+
+## Backoffice verification
+
+Admin unit tests use the native Angular Vitest/jsdom builder. Static checks also enforce OnPush, zoneless and feature boundaries. Admin integration installs Chromium in its job, builds the production SPA and API/worker, then runs Playwright with temporary PostgreSQL/Redis/Mailpit and real registration/verification/admin bootstrap; no shared infrastructure is used. axe checks the session screens and Lighthouse requires performance/accessibility/best-practices scores >=90. API build/export additionally verifies generated `packages/api-client` contracts for drift. The existing reusable CI orchestration and pnpm setup order are retained.

@@ -241,6 +241,33 @@ export class AdoptionsController {
       await this.adoptions.get(req.principal.userId, params.publicationId),
     );
   }
+  @Get('publications/:publicationId/manage/photos/:mediaId')
+  @ApiOperation({
+    operationId: 'getManagedAdoptionPhoto',
+    summary: 'Preview a private adoption snapshot photograph',
+    description:
+      'Requires an active verified global moderator/super_admin or authorized shelter publication manager. Available before publication. The entity and animal must remain active, and the exact photo must belong to both the submitted snapshot and current animal attachments. No clinical data or arbitrary media access. Detached/unavailable photos return 404; authenticated JPEG responses use no-store.',
+  })
+  @ApiOkResponse({
+    content: { 'image/jpeg': { schema: { type: 'string', format: 'binary' } } },
+  })
+  async managedPhoto(
+    @Param() params: PublicPhotoParamsDto,
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.setHeader('Cache-Control', 'no-store');
+    return new StreamableFile(
+      Buffer.from(
+        await this.adoptions.managedPhoto(
+          req.principal.userId,
+          params.publicationId,
+          params.mediaId,
+        ),
+      ),
+      { type: 'image/jpeg' },
+    );
+  }
   @Patch('publications/:publicationId')
   @ApiOperation({
     operationId: 'updateAdoptionPublication',

@@ -528,6 +528,26 @@ export class AdoptionsHandlers implements AdoptionsUseCases {
       });
     });
   }
+  managedPhoto(actorId: string, id: string, mediaId: string) {
+    return this.repository.run(async (work) => {
+      await work.lock(`user:${actorId}`);
+      const initial = (await this.load(work, id)).snapshot();
+      await work.lock(`organization:${initial.organizationId}`);
+      await work.lock(`animal:${initial.animalId}`);
+      const publication = await this.get(actorId, id);
+      const [current] = await this.animals.cards([publication.animalId]);
+      if (
+        !(await this.eligible(publication)) ||
+        !publication.snapshot?.photos.some((p) => p.mediaId === mediaId) ||
+        !current?.card.photos.some((p) => p.mediaId === mediaId)
+      )
+        throw new ApplicationError(
+          'RESOURCE_NOT_FOUND',
+          'Publication photo is unavailable.',
+        );
+      return (await this.media.read(mediaId, publication.animalId)).bytes;
+    });
+  }
   publicPhoto(id: string, mediaId: string) {
     return this.repository.run(async (work) => {
       const initial = (await this.load(work, id)).snapshot();

@@ -1,0 +1,555 @@
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="service-editor-title"
+>
+  <h2 id="service-editor-title" class="text-xl font-semibold">
+    {{ service() ? 'Editar servicio' : 'Crear servicio' }}
+  </h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Guardar crea un borrador y retira la publicación anterior. Las reservas
+    existentes conservan las condiciones que aceptaron.
+  </p>
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    class="mt-6"
+    aria-label="Perfil del servicio"
+  >
+    <fieldset [disabled]="blocked()" class="space-y-6">
+      <legend class="sr-only">Información y políticas del servicio</legend>
+      <div>
+        <label for="service-name" class="mb-2 block text-sm font-semibold"
+          >Nombre del servicio</label
+        ><input
+          id="service-name"
+          type="text"
+          formControlName="name"
+          maxlength="150"
+          [attr.aria-invalid]="invalid('name')"
+          aria-describedby="service-name-help"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+        />
+        <p id="service-name-help" class="mt-2 text-xs text-muted">
+          @if (invalid('name')) {
+            Revisa este campo.
+          }
+          Entre 2 y 150 caracteres.
+        </p>
+      </div>
+      <div>
+        <label
+          for="service-description"
+          class="mb-2 block text-sm font-semibold"
+          >Descripción del servicio</label
+        ><textarea
+          id="service-description"
+          formControlName="description"
+          rows="3"
+          maxlength="2000"
+          [attr.aria-invalid]="invalid('description')"
+          aria-describedby="service-description-help"
+          class="w-full rounded-xl border border-line bg-white px-3 py-3"
+        ></textarea>
+        <p id="service-description-help" class="mt-2 text-xs text-muted">
+          @if (invalid('description')) {
+            Revisa este campo.
+          }
+          Entre 10 y 2000 caracteres, sin saltos de línea.
+        </p>
+      </div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label for="service-category" class="mb-2 block text-sm font-semibold"
+            >Categoría del servicio</label
+          ><select
+            id="service-category"
+            formControlName="category"
+            class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+          >
+            @for (c of categories; track c.value) {
+              <option [value]="c.value">{{ c.label }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label for="service-priceCop" class="mb-2 block text-sm font-semibold"
+            >Precio en COP</label
+          ><input
+            id="service-priceCop"
+            type="text"
+            formControlName="priceCop"
+            inputmode="decimal"
+            maxlength="11"
+            [attr.aria-invalid]="invalid('priceCop')"
+            aria-describedby="service-priceCop-help"
+            class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+          />
+          <p id="service-priceCop-help" class="mt-2 text-xs text-muted">
+            @if (invalid('priceCop')) {
+              Revisa este campo.
+            }
+            Precio por cita o noche, impuestos incluidos. Hasta dos decimales;
+            máximo 21.474.836,47 COP.
+          </p>
+        </div>
+      </div>
+      <fieldset formArrayName="acceptedSpecies">
+        <legend class="text-sm font-semibold">Especies aceptadas</legend>
+        <div class="mt-3 grid gap-3 sm:grid-cols-4">
+          @for (s of species; track s.value; let i = $index) {
+            <label
+              class="flex min-h-11 items-center gap-3 rounded-xl border border-line px-3 text-sm"
+              ><input
+                type="checkbox"
+                [formControlName]="i"
+                class="size-5 accent-primary"
+              />{{ s.label }}</label
+            >
+          }
+        </div>
+        <p class="mt-2 text-xs text-muted">Selecciona al menos una especie.</p>
+      </fieldset>
+      <div>
+        <label
+          for="service-requirements"
+          class="mb-2 block text-sm font-semibold"
+          >Requisitos del servicio</label
+        ><textarea
+          id="service-requirements"
+          formControlName="requirements"
+          rows="3"
+          maxlength="2000"
+          [attr.aria-invalid]="invalid('requirements')"
+          aria-describedby="service-requirements-help"
+          class="w-full rounded-xl border border-line bg-white px-3 py-3"
+        ></textarea>
+        <p id="service-requirements-help" class="mt-2 text-xs text-muted">
+          @if (invalid('requirements')) {
+            Revisa este campo.
+          }
+          Entre 2 y 2000 caracteres, sin saltos de línea.
+        </p>
+      </div>
+      <div>
+        <label for="service-terms" class="mb-2 block text-sm font-semibold"
+          >Condiciones de reserva</label
+        ><textarea
+          id="service-terms"
+          formControlName="terms"
+          rows="3"
+          maxlength="2000"
+          [attr.aria-invalid]="invalid('terms')"
+          aria-describedby="service-terms-help"
+          class="w-full rounded-xl border border-line bg-white px-3 py-3"
+        ></textarea>
+        <p id="service-terms-help" class="mt-2 text-xs text-muted">
+          @if (invalid('terms')) {
+            Revisa este campo.
+          }
+          Entre 10 y 2000 caracteres, sin saltos de línea.
+        </p>
+      </div>
+      <section aria-labelledby="service-schedule-title">
+        <h3 id="service-schedule-title" class="font-semibold">
+          {{
+            category() === 'lodging'
+              ? 'Estancia por noches'
+              : 'Duración de la cita'
+          }}
+        </h3>
+        <div class="mt-4 grid gap-5 sm:grid-cols-2">
+          @if (category() === 'lodging') {
+            <div>
+              <label
+                for="service-checkIn"
+                class="mb-2 block text-sm font-semibold"
+                >Hora de entrada</label
+              ><input
+                id="service-checkIn"
+                type="time"
+                formControlName="checkIn"
+                step="900"
+                [attr.aria-invalid]="invalid('checkIn')"
+                aria-describedby="service-checkIn-help"
+                class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+              />
+              <p id="service-checkIn-help" class="mt-2 text-xs text-muted">
+                @if (invalid('checkIn')) {
+                  Revisa este campo.
+                }
+                Hora de Colombia, en cuartos de hora.
+              </p>
+            </div>
+            <div>
+              <label
+                for="service-checkOut"
+                class="mb-2 block text-sm font-semibold"
+                >Hora de salida</label
+              ><input
+                id="service-checkOut"
+                type="time"
+                formControlName="checkOut"
+                step="900"
+                [attr.aria-invalid]="invalid('checkOut')"
+                aria-describedby="service-checkOut-help"
+                class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+              />
+              <p id="service-checkOut-help" class="mt-2 text-xs text-muted">
+                @if (invalid('checkOut')) {
+                  Revisa este campo.
+                }
+                Debe ser anterior a la entrada, en hora de Colombia.
+              </p>
+            </div>
+            <div>
+              <label
+                for="service-minNights"
+                class="mb-2 block text-sm font-semibold"
+                >Mínimo de noches</label
+              ><input
+                id="service-minNights"
+                type="number"
+                formControlName="minNights"
+                min="1"
+                max="30"
+                step="1"
+                [attr.aria-invalid]="invalid('minNights')"
+                aria-describedby="service-minNights-help"
+                class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+              />
+              <p id="service-minNights-help" class="mt-2 text-xs text-muted">
+                @if (invalid('minNights')) {
+                  Revisa este campo.
+                }
+                Entre 1 y 30; pasos de 1.
+              </p>
+            </div>
+            <div>
+              <label
+                for="service-maxNights"
+                class="mb-2 block text-sm font-semibold"
+                >Máximo de noches</label
+              ><input
+                id="service-maxNights"
+                type="number"
+                formControlName="maxNights"
+                min="1"
+                max="30"
+                step="1"
+                [attr.aria-invalid]="invalid('maxNights')"
+                aria-describedby="service-maxNights-help"
+                class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+              />
+              <p id="service-maxNights-help" class="mt-2 text-xs text-muted">
+                @if (invalid('maxNights')) {
+                  Revisa este campo.
+                }
+                Entre 1 y 30; pasos de 1.
+              </p>
+            </div>
+          } @else {
+            <div>
+              <label
+                for="service-durationMinutes"
+                class="mb-2 block text-sm font-semibold"
+                >Duración en minutos</label
+              ><input
+                id="service-durationMinutes"
+                type="number"
+                formControlName="durationMinutes"
+                min="15"
+                max="480"
+                step="15"
+                [attr.aria-invalid]="invalid('durationMinutes')"
+                aria-describedby="service-durationMinutes-help"
+                class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+              />
+              <p
+                id="service-durationMinutes-help"
+                class="mt-2 text-xs text-muted"
+              >
+                @if (invalid('durationMinutes')) {
+                  Revisa este campo.
+                }
+                Entre 15 y 480; pasos de 15.
+              </p>
+            </div>
+            <div>
+              <label
+                for="service-bufferBeforeMinutes"
+                class="mb-2 block text-sm font-semibold"
+                >Preparación antes de la cita</label
+              ><input
+                id="service-bufferBeforeMinutes"
+                type="number"
+                formControlName="bufferBeforeMinutes"
+                min="0"
+                max="120"
+                step="15"
+                [attr.aria-invalid]="invalid('bufferBeforeMinutes')"
+                aria-describedby="service-bufferBeforeMinutes-help"
+                class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+              />
+              <p
+                id="service-bufferBeforeMinutes-help"
+                class="mt-2 text-xs text-muted"
+              >
+                @if (invalid('bufferBeforeMinutes')) {
+                  Revisa este campo.
+                }
+                Entre 0 y 120; pasos de 15.
+              </p>
+            </div>
+            <div>
+              <label
+                for="service-bufferAfterMinutes"
+                class="mb-2 block text-sm font-semibold"
+                >Preparación después de la cita</label
+              ><input
+                id="service-bufferAfterMinutes"
+                type="number"
+                formControlName="bufferAfterMinutes"
+                min="0"
+                max="120"
+                step="15"
+                [attr.aria-invalid]="invalid('bufferAfterMinutes')"
+                aria-describedby="service-bufferAfterMinutes-help"
+                class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+              />
+              <p
+                id="service-bufferAfterMinutes-help"
+                class="mt-2 text-xs text-muted"
+              >
+                @if (invalid('bufferAfterMinutes')) {
+                  Revisa este campo.
+                }
+                Entre 0 y 120; pasos de 15.
+              </p>
+            </div>
+          }
+        </div>
+      </section>
+      <section aria-labelledby="service-policy-title">
+        <h3 id="service-policy-title" class="font-semibold">
+          Políticas de reserva
+        </h3>
+        <div class="mt-4 grid gap-5 sm:grid-cols-2">
+          <div>
+            <label
+              for="service-confirmation"
+              class="mb-2 block text-sm font-semibold"
+              >Confirmación de reservas</label
+            ><select
+              id="service-confirmation"
+              formControlName="confirmationMode"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+            >
+              <option value="manual">Revisión manual de la empresa</option>
+              <option value="automatic">Automática al reservar</option>
+            </select>
+          </div>
+          <div>
+            <label
+              for="service-minimumNoticeMinutes"
+              class="mb-2 block text-sm font-semibold"
+              >Anticipación mínima en minutos</label
+            ><input
+              id="service-minimumNoticeMinutes"
+              type="number"
+              formControlName="minimumNoticeMinutes"
+              min="15"
+              max="43200"
+              step="1"
+              [attr.aria-invalid]="invalid('minimumNoticeMinutes')"
+              aria-describedby="service-minimumNoticeMinutes-help"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+            />
+            <p
+              id="service-minimumNoticeMinutes-help"
+              class="mt-2 text-xs text-muted"
+            >
+              @if (invalid('minimumNoticeMinutes')) {
+                Revisa este campo.
+              }
+              Entre 15 y 43200; pasos de 1.
+            </p>
+          </div>
+          <div>
+            <label
+              for="service-cancellationCutoffMinutes"
+              class="mb-2 block text-sm font-semibold"
+              >Límite de cancelación en minutos</label
+            ><input
+              id="service-cancellationCutoffMinutes"
+              type="number"
+              formControlName="cancellationCutoffMinutes"
+              min="0"
+              max="43200"
+              step="1"
+              [attr.aria-invalid]="invalid('cancellationCutoffMinutes')"
+              aria-describedby="service-cancellationCutoffMinutes-help"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+            />
+            <p
+              id="service-cancellationCutoffMinutes-help"
+              class="mt-2 text-xs text-muted"
+            >
+              @if (invalid('cancellationCutoffMinutes')) {
+                Revisa este campo.
+              }
+              Entre 0 y 43200; pasos de 1.
+            </p>
+          </div>
+          <div>
+            <label
+              for="service-requestTtlMinutes"
+              class="mb-2 block text-sm font-semibold"
+              >Vigencia de solicitud en minutos</label
+            ><input
+              id="service-requestTtlMinutes"
+              type="number"
+              formControlName="requestTtlMinutes"
+              min="15"
+              max="1440"
+              step="1"
+              [attr.aria-invalid]="invalid('requestTtlMinutes')"
+              aria-describedby="service-requestTtlMinutes-help"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+            />
+            <p
+              id="service-requestTtlMinutes-help"
+              class="mt-2 text-xs text-muted"
+            >
+              @if (invalid('requestTtlMinutes')) {
+                Revisa este campo.
+              }
+              Entre 15 y 1440; pasos de 1.
+            </p>
+          </div>
+        </div>
+        <p class="mt-4 rounded-xl bg-sage p-4 text-sm text-primary">
+          Cobro en el establecimiento. Pettly no cobra esta reserva por
+          internet.
+        </p>
+      </section>
+      <div>
+        <label for="service-resources" class="mb-2 block text-sm font-semibold"
+          >Recursos asignados</label
+        ><select
+          multiple
+          id="service-resources"
+          formControlName="resourceIds"
+          aria-describedby="service-resources-help"
+          class="min-h-32 w-full rounded-xl border border-line bg-white p-3"
+        >
+          @for (r of availableResources(); track r.id) {
+            <option [value]="r.id">
+              {{ r.name }} · capacidad {{ r.capacity }}
+            </option>
+          }
+        </select>
+        <p id="service-resources-help" class="mt-2 text-xs text-muted">
+          Hasta 20 recursos activos de esta empresa y modalidad. Puedes guardar
+          un borrador sin recursos; necesitas al menos uno para enviarlo a
+          revisión. Selección múltiple con Ctrl o Cmd. Gestiona las agendas
+          desde Recursos.
+        </p>
+      </div>
+      @if (category() === 'veterinary') {
+        <div>
+          <label
+            for="service-veterinaryCredentialId"
+            class="mb-2 block text-sm font-semibold"
+            >Profesional veterinario</label
+          ><select
+            id="service-veterinaryCredentialId"
+            formControlName="veterinaryCredentialId"
+            [attr.aria-invalid]="invalid('veterinaryCredentialId')"
+            aria-describedby="service-veterinaryCredentialId-help"
+            class="min-h-12 w-full rounded-xl border border-line bg-white px-3 py-2"
+          >
+            <option value="">Selecciona un profesional habilitado</option>
+            @for (p of professionals()?.items ?? []; track p.id) {
+              <option [value]="p.id">{{ p.professionalName }}</option>
+            }
+          </select>
+          @if (professionalBusy()) {
+            <p role="status" class="mt-2 text-sm">Consultando profesionales…</p>
+          }
+          @if (professionals(); as pp) {
+            <div class="mt-3 flex gap-3">
+              <button
+                type="button"
+                [disabled]="professionalBusy() || pp.page === 1"
+                (click)="professionalPageChanged.emit(pp.page - 1)"
+                class="min-h-11 rounded-xl border border-line px-3"
+              >
+                Profesionales anteriores
+              </button>
+              <button
+                type="button"
+                [disabled]="
+                  professionalBusy() || pp.page * pp.limit >= pp.candidateTotal
+                "
+                (click)="professionalPageChanged.emit(pp.page + 1)"
+                class="min-h-11 rounded-xl border border-line px-3"
+              >
+                Más profesionales
+              </button>
+            </div>
+          }
+          <p
+            id="service-veterinaryCredentialId-help"
+            class="mt-2 text-xs text-muted"
+          >
+            @if (invalid('veterinaryCredentialId')) {
+              Revisa este campo.
+            }
+            Profesional con acreditación vigente para esta empresa. La agenda
+            dedicada se asigna al elegirlo y debe corresponder al único recurso
+            asignado, de capacidad uno. La API verifica vigencia y habilitación;
+            seleccionarlo no acredita al profesional.
+          </p>
+        </div>
+      }
+      <div>
+        <label for="service-reason" class="mb-2 block text-sm font-semibold"
+          >Motivo del cambio de servicio</label
+        ><textarea
+          id="service-reason"
+          formControlName="reason"
+          rows="3"
+          maxlength="500"
+          [attr.aria-invalid]="invalid('reason')"
+          aria-describedby="service-reason-help"
+          class="w-full rounded-xl border border-line bg-white px-3 py-3"
+        ></textarea>
+        <p id="service-reason-help" class="mt-2 text-xs text-muted">
+          @if (invalid('reason')) {
+            Revisa este campo.
+          }
+          Entre 10 y 500 caracteres, sin saltos de línea.
+        </p>
+      </div>
+      @if (form.touched && form.hasError('profile')) {
+        <p
+          data-profile-error
+          tabindex="-1"
+          role="alert"
+          class="rounded-xl border border-line bg-paper p-4 text-sm"
+        >
+          Revisa las especies, los recursos y las políticas. Las citas usan
+          cuartos de hora; en alojamiento la salida debe ser anterior a la
+          entrada y el máximo de noches no puede ser menor al mínimo.
+          Veterinaria requiere una acreditación y su único recurso compatible.
+        </p>
+      }
+      <button
+        type="submit"
+        class="min-h-12 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        Guardar borrador
+      </button>
+    </fieldset>
+  </form>
+</section>

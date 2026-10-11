@@ -80,6 +80,17 @@ export class PrismaBookingsRepository implements BookingsRepository {
               : { buyerId: q.actorId }),
             ...(q.status ? { status: q.status } : {}),
             ...(q.serviceId ? { serviceId: q.serviceId } : {}),
+            ...(q.search
+              ? {
+                  OR: ['service', 'pet', 'contact'].map((field) => ({
+                    snapshot: {
+                      path: ['acceptance', field, 'name'],
+                      string_contains: q.search!.replace(/[\\%_]/g, '\\$&'),
+                      mode: 'insensitive' as const,
+                    },
+                  })),
+                }
+              : {}),
           };
           const [rows, total] = await Promise.all([
             this.db.client.bookingRecord.findMany({

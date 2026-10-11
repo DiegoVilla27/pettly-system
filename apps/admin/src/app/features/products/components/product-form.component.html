@@ -1,0 +1,130 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <fieldset [disabled]="busy() || blocked()">
+    <legend class="text-lg font-semibold">
+      {{ product() ? 'Editar ficha del producto' : 'Crear producto' }}
+    </legend>
+    <p class="mt-3 text-sm text-muted">
+      Moneda COP. Un cambio de ficha publicada la devuelve a borrador y requiere
+      otra revisión.
+    </p>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div class="">
+        <label for="product-name" class="mb-2 block text-sm font-semibold"
+          >Nombre del producto *</label
+        ><input
+          id="product-name"
+          formControlName="name"
+          maxlength="150"
+          [attr.aria-invalid]="
+            form.controls.name.invalid && form.controls.name.touched
+          "
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+        />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <p class="mt-2 text-sm text-danger">Revisa este campo.</p>
+        }
+      </div>
+      <div class="sm:col-span-2">
+        <label
+          for="product-description"
+          class="mb-2 block text-sm font-semibold"
+          >Descripción del producto *</label
+        ><textarea
+          id="product-description"
+          formControlName="description"
+          maxlength="4000"
+          rows="3"
+          [attr.aria-invalid]="
+            form.controls.description.invalid &&
+            form.controls.description.touched
+          "
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+        ></textarea>
+        @if (
+          form.controls.description.invalid && form.controls.description.touched
+        ) {
+          <p class="mt-2 text-sm text-danger">Revisa este campo.</p>
+        }
+      </div>
+      <div class="">
+        <label for="product-brand" class="mb-2 block text-sm font-semibold"
+          >Marca</label
+        ><input
+          id="product-brand"
+          formControlName="brand"
+          maxlength="100"
+          [attr.aria-invalid]="
+            form.controls.brand.invalid && form.controls.brand.touched
+          "
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+        />
+        @if (form.controls.brand.invalid && form.controls.brand.touched) {
+          <p class="mt-2 text-sm text-danger">Revisa este campo.</p>
+        }
+      </div>
+      <div class="sm:col-span-2">
+        <label for="product-reason" class="mb-2 block text-sm font-semibold"
+          >Motivo de la ficha *</label
+        ><textarea
+          id="product-reason"
+          formControlName="reason"
+          maxlength="500"
+          rows="3"
+          [attr.aria-invalid]="
+            form.controls.reason.invalid && form.controls.reason.touched
+          "
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+        ></textarea>
+        @if (form.controls.reason.invalid && form.controls.reason.touched) {
+          <p class="mt-2 text-sm text-danger">Revisa este campo.</p>
+        }
+      </div>
+      <div class="sm:col-span-2">
+        <label for="product-category" class="mb-2 block text-sm font-semibold"
+          >Categoría del producto *</label
+        ><select
+          id="product-category"
+          formControlName="categoryId"
+          [attr.aria-invalid]="
+            form.controls.categoryId.invalid && form.controls.categoryId.touched
+          "
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        >
+          <option value="">Selecciona una categoría activa</option>
+          @for (c of categories(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <p class="mt-3 text-xs text-muted">
+      Motivo de 10 a 500 caracteres, sin información personal ni saltos de
+      línea.
+    </p>
+    <label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+      ><input
+        type="checkbox"
+        formControlName="confirm"
+        [attr.aria-invalid]="
+          form.controls.confirm.invalid && form.controls.confirm.touched
+        "
+        class="size-5 accent-primary"
+      />Confirmo la ficha y la empresa seleccionada</label
+    >
+    @if (error()) {
+      <p role="alert" class="mt-4 text-sm text-danger">{{ error() }}</p>
+    }
+    <button
+      type="submit"
+      class="mt-5 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-strong disabled:opacity-50"
+    >
+      {{
+        busy()
+          ? 'Guardando…'
+          : product()
+            ? 'Guardar ficha del producto'
+            : 'Crear producto'
+      }}
+    </button>
+  </fieldset>
+</form>

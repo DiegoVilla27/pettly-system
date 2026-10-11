@@ -7,7 +7,7 @@ export const category = z.strictObject({
   id,
   name: text,
   slug: text,
-  description: text.nullable(),
+  description: z.string().max(1000).nullable(),
   status: z.enum(['active', 'inactive', 'archived']),
   version: z.number().int().positive(),
   createdAt: date,
@@ -19,7 +19,7 @@ export const publicProduct = z.strictObject({
   categoryId: id,
   name: text,
   description: text,
-  brand: text.nullable(),
+  brand: z.string().max(100).nullable(),
   currency: z.enum(['COP', 'USD', 'EUR']),
   version: z.number().int().positive(),
 });
@@ -35,7 +35,7 @@ export const product = publicProduct.extend({
   createdBy: id,
   reviewedBy: id.nullable(),
   reviewedAt: date.nullable(),
-  reviewReason: text.nullable(),
+  reviewReason: z.string().max(500).nullable(),
   createdAt: date,
   updatedAt: date,
 });

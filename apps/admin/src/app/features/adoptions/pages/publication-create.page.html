@@ -1,0 +1,67 @@
+<a
+  routerLink="/adopciones"
+  [queryParams]="{organizationId:organizationId()}"
+  class="inline-flex min-h-11 items-center text-sm font-semibold text-primary"
+  >← Volver a publicaciones</a
+>
+<h1 class="mt-3 text-3xl font-semibold tracking-tight">
+  Preparar publicación de adopción
+</h1>
+<app-problem [problem]="store.problem()" />
+@if(shelter.isLoading()){
+<p role="status" class="mt-5">Consultando refugio…</p>
+}@if(shelter.error()){<app-problem [problem]="toProblem(shelter.error())" />}
+@if(shelter.value();as s){
+<section class="mt-6 rounded-2xl border border-line bg-white p-5">
+  <h2 class="text-lg font-semibold">{{s.name}}</h2>
+  <p class="mt-2 text-xs break-all text-muted">{{s.id}}</p>
+  <a
+    [routerLink]="['/animales']"
+    [queryParams]="{organizationId:s.id}"
+    class="mt-3 inline-flex min-h-11 items-center font-semibold text-primary"
+    >Consultar animales del refugio →</a
+  >
+  <form [formGroup]="lookupForm" (ngSubmit)="choose()">
+    <label
+      for="publication-animal"
+      class="mt-4 mb-2 block text-sm font-semibold"
+      >UUID del animal activo</label
+    ><input
+      id="publication-animal"
+      [formControl]="animalId"
+      maxlength="36"
+      class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+      [attr.aria-invalid]="animalId.invalid&&animalId.touched"
+    /><button
+      type="submit"
+      class="mt-4 min-h-11 rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+      [disabled]="store.busy()||store.uncertain()||!!store.created()"
+    >
+      Consultar animal
+    </button>
+  </form>
+  @if(candidate.isLoading()){
+  <p role="status" class="mt-4">Consultando animal…</p>
+  }@if(candidate.error()){<app-problem
+    [problem]="toProblem(candidate.error())"
+  />} @if(ready()){ @if(candidate.value();as a){
+  <p class="mt-5 font-semibold">Animal seleccionado: {{a.name}}</p>
+  <p class="mt-2 text-xs break-all text-muted">{{a.id}}</p>
+  <p class="mt-3 text-sm text-muted">
+    Un animal puede tener una sola publicación abierta. El envío a revisión
+    capturará sus datos públicos y fotografías actuales.
+  </p>
+  @if(store.uncertain()){
+  <p role="status" class="mt-4 text-sm">
+    Consulta el listado antes de intentar otra creación.
+  </p>
+  }
+  <app-publication-form
+    class="mt-5 block"
+    [contextKey]="s.id+':'+a.id"
+    [busy]="store.busy()"
+    [blocked]="store.uncertain()||!!store.created()"
+    (submitted)="create($event)"
+  />}}
+</section>
+}

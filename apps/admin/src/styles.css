@@ -1,6 +1,68 @@
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #18332a;
-  background: #f7faf8;
+@import 'tailwindcss' source('./');
+@theme {
+  --color-paper: #fafbf8;
+  --color-ink: #233d35;
+  --color-muted: #56665e;
+  --color-primary: #285e4d;
+  --color-primary-strong: #1d473a;
+  --color-sage: #e8efe3;
+  --color-line: #dfe6dd;
+  --color-clay: #d89170;
+  --color-danger: #9f3434;
+  --color-danger-soft: #fff3f1;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+}
+@utility grid-cols-workspace {
+  grid-template-columns: 16rem minmax(0, 1fr);
+}
+@utility nav-current {
+  background: var(--color-sage);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+@layer base {
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+  button,
+  a,
+  input {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:not(:disabled),
+  a {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 4px;
+  }
+  input:focus-visible {
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--color-sage);
+    color: var(--color-ink);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0s;
+      animation-duration: 0s;
+      scroll-behavior: auto;
+    }
+  }
+  @media (forced-colors: active) {
+    button,
+    input,
+    a {
+      border: 1px solid ButtonText;
+    }
+  }
 }

@@ -1,6 +1,6 @@
 # Organizations module
 
-Status: organization management and onboarding implemented. Updated: 2026-10-08. Architecture: [DESIGN](../DESIGN.md). Permissions: [Authorization](authorization.md).
+Status: organization management and onboarding implemented. Updated: 2026-10-09. Architecture: [DESIGN](../DESIGN.md). Permissions: [Authorization](authorization.md).
 
 ## Purpose and boundaries
 
@@ -120,7 +120,7 @@ Every endpoint requires a Bearer access token and active verified account. Stric
 | PATCH /organizations/{id}/responsible            | Superadmin; `{responsibleUserId,reason,expectedVersion}` → 200 profile; old administrator membership retained.                |
 | DELETE /organizations/{id}                       | Superadmin; JSON `{reason,expectedVersion}` → 200 `{message:"Organization archived."}`.                                       |
 | GET /organizations/{id}/members                  | Own administrator or superadmin → paged membership list.                                                                      |
-| GET /organizations/{id}/audit                    | Superadmin → paged immutable lifecycle/membership events.                                                                     |
+| GET /organizations/{id}/audit                    | Superadmin or this organization’s business/adoption administrator → paged immutable lifecycle/membership events.              |
 | PUT /organizations/{id}/members/{userId}/role    | Superadmin; `{role,reason}` → 200 membership. Target must be active/verified, type-compatible.                                |
 | DELETE /organizations/{id}/members/{userId}/role | Superadmin; JSON `{reason}` → 200 `{message:"Organization role removed."}`.                                                   |
 
@@ -173,3 +173,15 @@ Local deployment verified: migration 006 is applied to the dedicated pettly_db o
 ## Notifications integration — 2026-10-09
 
 Lifecycle y cambios reales de membresía publican avisos mínimos a solicitante/responsable/miembro afectado según el evento, dentro de la transacción auditada. Correo de organización/acceso obligatorio; las preferencias opcionales no lo desactivan. Profile-only y membresía sin cambios no generan avisos. Event key de membresía usa UUID de su auditoría. Ver [Notifications](notifications.md).
+
+## Angular administration — 2026-10-09
+
+The superadministrator backoffice implements creation, profile editing, review decisions, operational status, responsibility transfer, members and audit using this module’s existing endpoints. See [Backoffice organizations](backoffice-organizations.md) for routes, validation and manual checks. Legal-document storage and upload remain outside this module; approval does not certify documents or professional eligibility.
+
+Nullable response strings now declare the existing domain length limits explicitly in Zod. This fixes Swagger reflection that incorrectly described these properties as arrays; the actual JSON remains string-or-null. OpenAPI export asserts the profile/audit nullable string types, and the shared client is regenerated. No database migration or domain behavior changes are required. Current API has 190 operations. The Organizations UI delivery passed 31 Angular unit tests, 64 API unit tests and four real browser scenarios on disposable infrastructure.
+
+Current administrators can read their own organization’s immutable history through the same paginated audit endpoint. Operators, unassigned applicants and other organizations’ administrators are denied; archived organization history remains superadministrator-only. The authorization is checked against the current active verified account and membership in the application layer.
+
+## Integration regression verification (2026-10-11)
+
+The HTTP integration contract now expects 200 for a current organization administrator reading their own immutable audit. It checks bounded pagination and organization scope against persisted audit rows. Unassigned applicants, operators and administrators requesting another organization remain forbidden. Removing membership immediately removes audit access; archived history remains superadministrator-only. The complete API integration suite passed all 64 test results (63 HTTP scenarios plus their parent suite) on disposable PostgreSQL/Redis/Mailpit. This corrects an outdated test expectation without changing runtime authorization or weakening CI quality gates.
