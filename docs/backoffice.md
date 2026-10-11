@@ -4,7 +4,7 @@
 
 `apps/admin` is the Angular workspace for superadministrators, moderators, business teams and adoption teams. The first delivery implements browser login, session restoration and rotation, logout, route protection, a workspace shell, home and a read-only account/access view. It consumes the real NestJS API.
 
-User management is implemented for superadministrators: search/filter/pagination, detail, invitation/resend, profile editing, audited status/global-role changes, scoped memberships and user audit. See [Backoffice users](backoffice-users.md). Organization management and review are implemented for superadministrators: draft creation/editing, submission, approval/rejection, suspension/reactivation, responsibility transfer, members and audit. See [Backoffice organizations](backoffice-organizations.md). Veterinary accreditation review is also implemented: private queue/evidence, independent approval/rejection, revocation and immutable revision history. See [Backoffice veterinary](backoffice-veterinary.md). Catalog categories and independent product moderation are implemented for their respective global roles; see [Backoffice catalog](backoffice-catalog.md). Inventory management is implemented for eligible business teams and superadmin; see [Backoffice inventory](backoffice-inventory.md). Services management and independent publication review are implemented; resources, weekly calendars, blocks and availability are implemented; booking management is the next interface feature. See [Backoffice resources](backoffice-resources.md). See [Backoffice services](backoffice-services.md). Registration and password recovery screens belong to a later client flow; the API endpoints already exist.
+User management is implemented for superadministrators: search/filter/pagination, detail, invitation/resend, profile editing, audited status/global-role changes, scoped memberships and user audit. See [Backoffice users](backoffice-users.md). Organization management and review are implemented for superadministrators: draft creation/editing, submission, approval/rejection, suspension/reactivation, responsibility transfer, members and audit. See [Backoffice organizations](backoffice-organizations.md). Veterinary accreditation review is also implemented: private queue/evidence, independent approval/rejection, revocation and immutable revision history. See [Backoffice veterinary](backoffice-veterinary.md). Catalog categories and independent product moderation are implemented for their respective global roles; see [Backoffice catalog](backoffice-catalog.md). Inventory management is implemented for eligible business teams and superadmin; see [Backoffice inventory](backoffice-inventory.md). Services management and independent publication review are implemented; resources, weekly calendars, blocks and availability are implemented; booking management is implemented; see [Backoffice bookings](backoffice-bookings.md). See [Backoffice resources](backoffice-resources.md). See [Backoffice services](backoffice-services.md). Invitation activation, verification, password recovery and own account/security/session screens are implemented; see [Backoffice account](backoffice-account.md). Public customer registration remains part of the client application.
 
 ## Architecture and ownership
 
@@ -23,7 +23,7 @@ apps/admin/src/app/
   features/
     auth/                 Login form, routed access and denied pages
     workspace/            Home and current capabilities
-    account/              Read-only current identity and memberships
+    account/              Own profile, security, sessions and account lifecycle
     users/                Superadmin account administration and access
     organizations/        Superadmin organization lifecycle, members and audit
     veterinary/           Private professional evidence and independent review
@@ -167,3 +167,9 @@ Business product operations are available in `/productos`: scoped lists, profile
 ## Operational closure
 
 Own account/security and actual email action routes, own team/profile/history access, private veterinary preparation and named eligible selection, COP commercial conditions, administrative user anonymization and organization archival are now included. The earlier historical delivery counts above describe those deliveries; use the current [readiness checklist](backoffice-readiness.md), [account](backoffice-account.md) and [commercial policy](backoffice-commercial.md) documents for the final scope and boundaries.
+
+## Shared browser HTTP-body capture
+
+`tests/helpers/responses.ts` preserves actual API responses independently of Chromium navigation. `signIn` enables it on each authenticated test page; the direct login-body scenario enables it explicitly. Body-reading assertions resolve the retained response by the original Playwright Request identity. Only relevant command responses, login and explicit availability reads are buffered; background reads and session refresh keep the original browser transport. The helper forwards actual status, headers and body, with original authentication/payload/version and no transport retries or redirects. Test-specific lost-response routes retain precedence. This addresses the same CDP body-discard race observed in both Bookings and Catalog without fabricating business responses or changing application code.
+
+Shared-capture verification: all 19 real browser scenarios passed on disposable PostgreSQL/Redis/Mailpit; Angular typecheck and test lint passed with no errors. Lighthouse remained 98/100/100.

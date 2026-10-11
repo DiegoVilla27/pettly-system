@@ -1,3 +1,4 @@
+import { retainedResponse } from './helpers/responses';
 import {
   test,
   expect,
@@ -9,6 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { signIn, accessible, resetIsolatedRates } from './helpers/identity';
 const reason = 'SMTP service restored; recover informational delivery.';
 async function json<T>(r: APIResponse | Response): Promise<T> {
+  r = retainedResponse(r);
   expect(r.ok(), await r.text()).toBe(true);
   return (await r.json()) as T;
 }

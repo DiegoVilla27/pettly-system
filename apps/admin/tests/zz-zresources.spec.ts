@@ -1,3 +1,4 @@
+import { retainedResponse } from './helpers/responses';
 import type { ApiResponse } from '@pettly/api-client';
 import {
   test,
@@ -8,6 +9,7 @@ import {
 import { signIn, accessible, resetIsolatedRates } from './helpers/identity';
 const reason = 'Isolated resource calendar and capacity verification';
 const json = async <T>(r: APIResponse | Response): Promise<T> => {
+  r = retainedResponse(r);
   expect(r.ok(), await r.text()).toBe(true);
   return (await r.json()) as T;
 };

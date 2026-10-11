@@ -1,3 +1,4 @@
+import { retainedResponse } from './helpers/responses';
 import type { ApiRequest, ApiResponse } from '@pettly/api-client';
 import { test, expect, type Page, type APIResponse } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
@@ -23,38 +24,15 @@ async function fillDecision(page: Page, action: string) {
 }
 async function decide(page: Page, action: string) {
   await fillDecision(page, action);
-  // Preserve the real HTTP body before delivering it to Chrome. Browser
-  // response bodies can be discarded as the UI refreshes its decision/history.
-  const pattern = '**/api/bookings/admin/**';
-  let captured: APIResponse | undefined;
-  await page.route(pattern, async (route) => {
-    if (route.request().method() !== 'POST') {
-      await route.continue();
-      return;
-    }
-    captured = await route.fetch({ maxRetries: 0, maxRedirects: 0 });
-    await captured.body();
-    await route.fulfill({ response: captured });
-  });
-  try {
-    const response = page.waitForResponse(
-      (r) =>
-        r.url().includes('/api/bookings/admin/') &&
-        r.request().method() === 'POST',
-    );
-    await page
-      .getByRole('button', {
-        name: 'Registrar decisión de reserva',
-        exact: true,
-      })
-      .click();
-    await response;
-    if (!captured)
-      throw Error('The real booking decision returned no response.');
-    return captured;
-  } finally {
-    await page.unroute(pattern);
-  }
+  const response = page.waitForResponse(
+    (r) =>
+      r.url().includes('/api/bookings/admin/') &&
+      r.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Registrar decisión de reserva', exact: true })
+    .click();
+  return retainedResponse(await response);
 }
 function trustedClock(
   action: string,

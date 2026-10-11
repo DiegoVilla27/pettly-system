@@ -1,3 +1,4 @@
+import { retainedResponse } from './helpers/responses';
 import type { ApiRequest, ApiResponse } from '@pettly/api-client';
 import {
   test,
@@ -10,6 +11,7 @@ import { signIn, accessible, resetIsolatedRates } from './helpers/identity';
 const reason = 'Isolated service policy and publication verification';
 const password = 'A sufficiently long password!';
 const json = async <T>(r: APIResponse | Response): Promise<T> => {
+  r = retainedResponse(r);
   expect(r.ok(), await r.text()).toBe(true);
   return (await r.json()) as T;
 };

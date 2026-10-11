@@ -66,3 +66,5 @@ Local execution: API/admin Docker images rebuilt. `/reservas`, proxied `/api/hea
 ## CI response-capture regression (2026-10-11)
 
 The booking decision browser helper now buffers the actual server response through Playwright routing before forwarding it unchanged to Chrome. The request retains its original authentication, body and optimistic version. No response is fabricated, and transport retries are disabled. This avoids Chromium discarding a response body during UI/history refresh and keeps the real 200/409/403 assertions and persisted audit checks. The complete 19-scenario browser suite passed on disposable infrastructure; Angular typecheck and lint passed. The application and API contracts are unchanged.
+
+The retained-response mechanism is now shared across browser scenarios through `tests/helpers/responses.ts`; Bookings consumes it instead of maintaining a separate interceptor. Background reads/session refresh stay on the original browser transport, and the explicit lost-response scenario retains its own interception. See [Backoffice](backoffice.md#shared-browser-http-body-capture).

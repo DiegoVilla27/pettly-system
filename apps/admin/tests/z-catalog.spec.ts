@@ -1,3 +1,4 @@
+import { retainedResponse } from './helpers/responses';
 import type { ApiResponse } from '@pettly/api-client';
 import {
   test,
@@ -19,6 +20,7 @@ test('real category management and independent product moderation preserve priva
   const token = await signIn(page, 'admin@example.com');
   const headers = { Authorization: 'Bearer ' + token };
   const json = async <T>(response: APIResponse | Response): Promise<T> => {
+    response = retainedResponse(response);
     expect(response.ok(), await response.text()).toBe(true);
     return (await response.json()) as T;
   };

@@ -76,3 +76,5 @@ Docker API and admin were rebuilt and are healthy. Catalog/category SPA routes a
 ## Company product management UI
 
 Business product operations are available in `/productos`: scoped lists, profile, COP variants, private photos, publication submission, pause/archive and audit. Independent moderation remains in `/catalogo`; inventory keeps stock ownership. See [Backoffice products](backoffice-products.md) for permissions, architecture, currency constraints and manual checks.
+
+Category create/update browser assertions now use the shared retained-response helper. The real server body is preserved before being delivered to Chrome, so post-save rendering/navigation cannot invalidate the test response. Authentication, versions, permission boundaries and immutable audit checks remain authoritative. See [Backoffice](backoffice.md#shared-browser-http-body-capture).

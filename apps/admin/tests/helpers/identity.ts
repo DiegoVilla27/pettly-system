@@ -1,3 +1,4 @@
+import { preserveApiResponses } from './responses';
 import { expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { createRequire } from 'node:module';
@@ -25,6 +26,7 @@ export async function resetIsolatedRates() {
   }
 }
 export async function signIn(page: Page, email: string) {
+  await preserveApiResponses(page);
   await resetIsolatedRates();
   await page.goto('/acceso');
   await page.getByLabel('Correo electrónico').fill(email);

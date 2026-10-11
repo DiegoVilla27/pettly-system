@@ -1,3 +1,4 @@
+import { preserveApiResponses, retainedResponse } from './helpers/responses';
 import { test, expect, chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import lighthouse from 'lighthouse';
@@ -33,11 +34,12 @@ test('real identity flow, protected routes, rotating cookies, tabs and accessibl
   await page.getByRole('button', { name: 'Entrar a mi espacio' }).click();
   await expect(page.getByRole('alert')).toContainText('no son correctos');
   await page.getByLabel('Contraseña', { exact: true }).fill(password);
+  await preserveApiResponses(page);
   const loginResponse = page.waitForResponse(
     (r) => r.url().endsWith('/api/auth/login') && r.status() === 200,
   );
   await page.getByRole('button', { name: 'Entrar a mi espacio' }).click();
-  const login = await (await loginResponse).json();
+  const login = await retainedResponse(await loginResponse).json();
   expect(login.refreshToken).toBeUndefined();
   await expect(page).toHaveURL(/\/inicio$/);
   expect(
