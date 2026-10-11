@@ -1,6 +1,6 @@
 # Diseño de Pettly
 
-Última actualización: 2026-10-10.
+Última actualización: 2026-10-11.
 
 Este documento reúne las decisiones de arquitectura y producto acordadas para Pettly. Distingue lo implementado de lo planificado: una decisión descrita aquí no implica que ya exista en el código.
 
@@ -510,3 +510,5 @@ El origen de los enlaces de correo local pasa al backoffice `http://localhost:43
 - **2026-10-10 — cierre verificado del backoffice:** 252 pruebas unitarias Angular, 80 API y 19 recorridos reales con PostgreSQL/Redis/Mailpit aislados aprobados. Tipado, lint sin errores, arquitectura y formato aprobados; 114 componentes OnPush, OpenAPI de 197 operaciones y Lighthouse 98/100/100. El historial de organizaciones permite administradores propios actuales y conserva el archivo exclusivo del superadmin. Sin migraciones ni fixtures en infraestructura compartida.
 
 - **2026-10-10 — ejecución del cierre:** API/worker/admin Docker reconstruidos y saludables; rutas de cuenta, condiciones comerciales, veterinaria propia y recuperación en puerto 4300, readiness y Swagger responden 200; consultas veterinarias anónimas 401. Reinicio con `RUN_DATABASE_MIGRATIONS=false`, sin modificar fixtures compartidos.
+
+- **2026-10-11 — regresión CI corregida:** la integración HTTP de Organizations conservaba el antiguo 403 del historial propio pese al permiso de lectura para administradores actuales. Se actualiza a 200 con paginación y ámbito contrastados contra PostgreSQL; se verifican 403 para solicitantes sin membresía, operadores, otras organizaciones, membresía retirada y archivo, conservando la inspección histórica del superadmin. La suite completa API pasa 64 resultados (63 escenarios más su suite) en infraestructura aislada; lint sin errores y formato aprobados. No cambian API, permisos, esquema ni quality gates.

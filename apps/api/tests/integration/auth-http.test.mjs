@@ -2380,6 +2380,11 @@ test('identity, sessions, email, concurrency, HTTP contracts and rate limiting a
         assert.equal(created.body.applicantId, applicant.account.id);
         const path = `/organizations/${created.body.id}`;
         assert.equal(
+          (await request(path + '/audit', undefined, applicant.headers, 'GET'))
+            .status,
+          403,
+        );
+        assert.equal(
           await db.organizationMembership.count({
             where: { organizationId: created.body.id },
           }),
@@ -2694,9 +2699,37 @@ test('identity, sessions, email, concurrency, HTTP contracts and rate limiting a
           ).body.total,
           2,
         );
+        const ownAudit = await request(
+          path + '/audit?page=1&limit=1',
+          undefined,
+          applicant.headers,
+          'GET',
+        );
+        assert.equal(ownAudit.status, 200, JSON.stringify(ownAudit.body));
+        assert.equal(ownAudit.body.page, 1);
+        assert.equal(ownAudit.body.limit, 1);
+        assert.equal(ownAudit.body.items.length, 1);
         assert.equal(
-          (await request(path + '/audit', undefined, applicant.headers, 'GET'))
-            .status,
+          ownAudit.body.total,
+          await db.organizationAuditEntry.count({
+            where: { organizationId: id },
+          }),
+        );
+        assert.equal(ownAudit.body.items[0].organizationId, id);
+        const foreign = await db.organization.findFirst({
+          where: { id: { not: id } },
+          select: { id: true },
+        });
+        assert.ok(foreign);
+        assert.equal(
+          (
+            await request(
+              `/organizations/${foreign.id}/audit`,
+              undefined,
+              applicant.headers,
+              'GET',
+            )
+          ).status,
           403,
         );
         const responsiblePath = `${path}/members/${applicant.account.id}/role`;
@@ -2915,6 +2948,16 @@ test('identity, sessions, email, concurrency, HTTP contracts and rate limiting a
           'GET',
         );
         assert.equal(audit.status, 200);
+        assert.equal(
+          (await request(path + '/audit', undefined, applicant.headers, 'GET'))
+            .status,
+          403,
+        );
+        assert.equal(
+          (await request(path + '/audit', undefined, outsider.headers, 'GET'))
+            .status,
+          200,
+        );
         assert.ok(
           audit.body.items.some(
             (e) =>
@@ -2973,6 +3016,23 @@ test('identity, sessions, email, concurrency, HTTP contracts and rate limiting a
         const row = await db.organization.findUnique({ where: { id } });
         assert.equal(row.status, 'deleted');
         assert.equal(row.name, 'Archived organization');
+        assert.equal(
+          (await request(path + '/audit', undefined, outsider.headers, 'GET'))
+            .status,
+          403,
+        );
+        const archivedAudit = await request(
+          path + '/audit',
+          undefined,
+          adminHeaders,
+          'GET',
+        );
+        assert.equal(archivedAudit.status, 200);
+        assert.ok(
+          archivedAudit.body.items.some(
+            (entry) => entry.action === 'organization.deleted',
+          ),
+        );
         for (const field of [
           'legalName',
           'registrationNumber',
