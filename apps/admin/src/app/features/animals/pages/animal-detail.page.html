@@ -1,0 +1,217 @@
+<a
+  routerLink="/animales"
+  [queryParams]="{organizationId:context()?.organizationId}"
+  class="inline-flex min-h-11 items-center text-sm font-semibold text-primary"
+  >← Volver a animales</a
+>
+<div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <p class="text-xs font-semibold text-primary">
+      Registro privado del refugio
+    </p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+      {{store.animal()?.name ?? 'Animal del refugio'}}
+    </h1>
+  </div>
+  <button
+    type="button"
+    class="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+    (click)="refresh()"
+    [disabled]="store.loading() || store.busy()"
+  >
+    Actualizar animal
+  </button>
+</div>
+@if(!context()){
+<p role="alert" class="mt-2 text-sm text-danger">
+  La dirección del animal no es válida.
+</p>
+}@if(store.loading()){
+<p role="status" class="mt-5 text-sm text-muted">Cargando animal…</p>
+}<app-problem [problem]="store.problem()" /><app-problem
+  [problem]="store.auditProblem()"
+/>
+@if(store.animal();as a){@if(context();as c){
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="animal-profile-title"
+>
+  <h2 id="animal-profile-title" class="text-lg font-semibold">
+    Perfil del animal
+  </h2>
+  <p class="mt-3 text-sm">
+    {{speciesLabel(a.species)}} · {{statusLabel(a.status)}} · v{{a.version}}
+  </p>
+  <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-muted">Animal</dt>
+      <dd class="mt-1 break-all">{{a.id}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Refugio</dt>
+      <dd class="mt-1 break-all">{{a.organizationId}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Peso declarado</dt>
+      <dd class="mt-1">
+        {{a.weightGrams===null?'Sin información':a.weightGrams/1000+' kg'}}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-muted">Fecha de nacimiento</dt>
+      <dd class="mt-1">
+        {{a.dateOfBirth ?? 'Sin información'}}{{a.birthDateEstimated?'
+        (estimada)':''}}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-muted">Actualizado</dt>
+      <dd class="mt-1">{{date(a.updatedAt)}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Microchip privado</dt>
+      <dd class="mt-1 break-all">{{a.microchip ?? 'Sin información'}}</dd>
+    </div>
+  </dl>
+  <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-muted">Raza</dt>
+      <dd>{{a.breed ?? 'Sin información'}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Sexo</dt>
+      <dd>
+        {{a.sex==='female'?'Hembra':a.sex==='male'?'Macho':'Sin determinar'}}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-muted">Tamaño</dt>
+      <dd>
+        @for(s of sizes;track s.value){@if(s.value===a.size){ {{s.label}} }}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-muted">Color</dt>
+      <dd>{{a.color ?? 'Sin información'}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Vacunación declarada</dt>
+      <dd>{{a.vaccinated===null?'Sin información':a.vaccinated?'Sí':'No'}}</dd>
+    </div>
+    <div>
+      <dt class="text-muted">Esterilización declarada</dt>
+      <dd>{{a.neutered===null?'Sin información':a.neutered?'Sí':'No'}}</dd>
+    </div>
+  </dl>
+  <h3 class="mt-5 font-semibold">Descripción</h3>
+  <p class="mt-2 text-sm break-words">{{a.description ?? 'Sin información'}}</p>
+  <h3 class="mt-5 font-semibold">Cuidados especiales para publicación</h3>
+  <p class="mt-2 text-sm break-words">
+    {{a.specialNeeds ?? 'Sin información'}}
+  </p>
+  <h3 class="mt-5 font-semibold">Notas clínicas privadas</h3>
+  <p class="mt-2 text-sm break-words">{{a.healthNotes ?? 'Sin información'}}</p>
+  <p class="mt-4 text-sm text-muted">
+    Las fotos y los cambios de perfil permanecen privados hasta una publicación
+    revisada. El microchip y las notas clínicas nunca forman parte de esa
+    publicación.
+  </p>
+</section>
+@if(store.success()){
+<p role="status" class="mt-5 rounded-xl bg-sage p-4 text-sm">
+  Cambio registrado. El historial refleja las acciones confirmadas.
+</p>
+} @if(store.refreshRequired()){
+<p role="status" class="mt-4 text-sm">
+  Actualiza y revisa el historial antes de continuar.
+</p>
+}
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="animal-photos-title"
+>
+  <h2 id="animal-photos-title" class="text-lg font-semibold">
+    Fotografías privadas ({{a.photos.length}}/10)
+  </h2>
+  <div class="mt-4 flex flex-wrap gap-3">
+    @for(p of a.photos;track p.id){<button
+      type="button"
+      class="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-semibold hover:bg-paper disabled:opacity-50"
+      (click)="selectedPhoto.set(p.mediaId)"
+    >
+      Ver fotografía {{p.position+1}}</button
+    >}@empty{
+    <p class="text-sm text-muted">Todavía no hay fotografías.</p>
+    }
+  </div>
+  @if(photo.isLoading()){
+  <p role="status" class="mt-4 text-sm">Cargando fotografía…</p>
+  }@if(photo.error()){<app-problem
+    [problem]="toProblem(photo.error())"
+  />}@if(photo.value();as blob){<app-private-image
+    [blob]="blob"
+    [context]="a.id+':'+a.version+':'+selectedPhoto()"
+    title="Fotografía del animal"
+    [alt]="'Fotografía privada de '+a.name"
+    (closed)="selectedPhoto.set(null)"
+  />}
+</section>
+@if(a.status!=='archived'){
+<section class="mt-6 rounded-2xl border border-line bg-white p-5">
+  <app-animal-form
+    [animal]="a"
+    [busy]="store.busy()"
+    [blocked]="store.refreshRequired()"
+    (submitted)="update($event)"
+  />
+</section>
+<section class="mt-6 rounded-2xl border border-line bg-white p-5">
+  <app-animal-action
+    [animal]="a"
+    [context]="c"
+    [busy]="store.busy()"
+    [blocked]="store.refreshRequired()"
+    (submitted)="execute($event)"
+  />
+</section>
+}@else{
+<p class="mt-5 rounded-xl bg-paper p-4 text-sm">
+  Este registro está archivado y es de solo lectura.
+</p>
+}
+<section
+  class="mt-6 rounded-2xl border border-line bg-white p-5"
+  aria-labelledby="animal-audit-title"
+>
+  <h2 id="animal-audit-title" class="text-lg font-semibold">
+    Historial del animal
+  </h2>
+  @if(store.auditLoading()){
+  <p role="status" class="mt-4 text-sm">Cargando historial…</p>
+  }@if(store.audit();as h){
+  <ol class="mt-4 space-y-4" aria-label="Cambios del animal">
+    @for(e of h.items;track e.id){
+    <li class="border-t border-line pt-4">
+      <p class="font-semibold">{{auditLabels[e.action]}}</p>
+      <p class="mt-2 text-sm">{{e.reason}}</p>
+      <p class="mt-2 text-xs text-muted">{{date(e.createdAt)}}</p>
+      <p class="mt-1 text-xs break-all text-muted">
+        Responsable: {{e.actorId}}
+      </p>
+      <p class="mt-1 text-xs break-all text-muted">
+        Referencia: {{e.requestId}}
+      </p>
+    </li>
+    }@empty{
+    <li class="text-sm text-muted">Sin cambios en esta página.</li>
+    }
+  </ol>
+  <app-pagination
+    [page]="h.page"
+    [limit]="h.limit"
+    [total]="h.total"
+    [busy]="store.auditLoading()"
+    (pageChange)="page($event)"
+  />}
+</section>
+}}

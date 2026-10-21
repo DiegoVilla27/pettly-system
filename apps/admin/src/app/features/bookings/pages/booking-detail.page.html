@@ -1,0 +1,125 @@
+<a
+  routerLink="/reservas"
+  [queryParams]="{organizationId:context()?.organizationId}"
+  class="inline-flex min-h-11 items-center text-sm font-semibold text-primary"
+  >← Volver a reservas</a
+><app-problem [problem]="store.problem()" /> @if(store.loading()){
+<h1 class="mt-4 text-3xl font-semibold">Consultando reserva…</h1>
+}@else if(store.booking();as b){
+<header class="mt-3 flex flex-wrap items-start justify-between gap-5">
+  <div class="min-w-0">
+    <p class="text-xs font-semibold text-primary">
+      {{statusLabel(b.status)}} · Colombia
+    </p>
+    <h1 class="mt-3 text-3xl font-semibold tracking-tight break-words">
+      {{b.acceptance.service.name}} para {{b.acceptance.pet.name}}
+    </h1>
+    <p class="mt-3 text-sm text-muted">
+      Versión {{b.version}} · Actualizado {{colombiaDateTime(b.updatedAt)}}
+    </p>
+  </div>
+  <button
+    type="button"
+    (click)="refresh()"
+    [disabled]="store.busy()"
+    class="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold disabled:opacity-50"
+  >
+    Actualizar reserva
+  </button>
+</header>
+@if(store.success();as result){
+<p role="status" class="mt-5 rounded-xl bg-sage p-4 text-sm text-primary">
+  Resultado registrado: {{statusLabel(result.status)}}. Consulta el historial de
+  la reserva.
+</p>
+} @if(store.refreshRequired()){
+<p role="status" class="mt-5 rounded-xl bg-paper p-4 text-sm">
+  Actualiza el estado y revisa el historial antes de realizar otra acción. La
+  operación no se repite automáticamente.
+</p>
+} @if(b.expiresAt){
+<p class="mt-5 rounded-xl bg-paper p-4 text-sm">
+  Plazo de confirmación:
+  {{colombiaDateTime(b.expiresAt)}}.@if(deadlineElapsed()){ El plazo ya terminó.
+  Actualiza para consultar el vencimiento registrado.}
+</p>
+}
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="booking-accepted-heading"
+>
+  <h2 id="booking-accepted-heading" class="text-xl font-semibold">
+    Lo que el cliente aceptó
+  </h2>
+  <p class="mt-3 text-sm text-muted">
+    Estas condiciones se conservaron al reservar. Una edición posterior del
+    servicio no cambia este acuerdo.
+  </p>
+  <app-booking-acceptance [booking]="b" />
+  <p class="mt-5 text-xs break-all text-muted">
+    Reserva {{b.id}} · Empresa {{b.organizationId}} · Servicio {{b.serviceId}}
+  </p>
+</section>
+<app-booking-decision
+  [booking]="b"
+  [now]="now()"
+  [blocked]="store.busy()||store.refreshRequired()"
+  (decided)="decide($event)"
+/>
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="booking-history-heading"
+>
+  <h2 id="booking-history-heading" class="text-xl font-semibold">
+    Historial de la reserva
+  </h2>
+  <p class="mt-3 text-sm text-muted">
+    Los cambios conservan el motivo, el responsable y las condiciones de cada
+    revisión.
+  </p>
+  <app-problem [problem]="store.auditProblem()" />@if(store.auditLoading()){
+  <p role="status" class="mt-4 text-sm text-muted">Consultando historial…</p>
+  }@else if(!store.auditProblem()){
+  <ul aria-label="Cambios de la reserva" class="mt-5 space-y-4">
+    @for(a of store.audits();track a.id){
+    <li class="rounded-2xl border border-line p-4">
+      <h3 class="text-sm font-semibold">
+        {{historyLabels[a.action]??a.action}} · versión {{a.version}}
+      </h3>
+      <p class="mt-2 text-xs text-muted">
+        {{colombiaDateTime(a.createdAt)}} · {{statusLabel(a.snapshot.status)}}
+      </p>
+      <p class="mt-3 text-sm break-words">{{a.reason}}</p>
+      <p class="mt-3 text-xs break-all text-muted">
+        {{a.actorId?'Cuenta '+a.actorId:'Sistema'}} · Referencia {{a.requestId}}
+      </p>
+      <details class="mt-4">
+        <summary
+          class="min-h-11 cursor-pointer text-sm font-semibold text-primary"
+        >
+          Condiciones de la revisión {{a.version}}
+        </summary>
+        <app-booking-acceptance [booking]="a.snapshot" />
+      </details>
+    </li>
+    }@empty{
+    <li class="text-sm text-muted">No hay cambios en esta página.</li>
+    }
+  </ul>
+  <app-pagination
+    [page]="auditPage()"
+    [total]="store.auditTotal()"
+    [busy]="store.auditLoading()"
+    (pageChange)="page($event)"
+  />}
+</section>
+}@else{
+<h1 class="mt-4 text-3xl font-semibold">Reserva no disponible</h1>
+<button
+  type="button"
+  (click)="refresh()"
+  [disabled]="store.busy()"
+  class="mt-5 min-h-11 rounded-xl border border-line px-4 text-sm font-semibold"
+>
+  Actualizar reserva</button
+>}

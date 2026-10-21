@@ -1,0 +1,169 @@
+<p class="text-xs font-semibold tracking-widest text-primary uppercase">
+  Administración
+</p>
+<h1 class="mt-3 text-3xl font-semibold tracking-tight">
+  Acreditaciones veterinarias
+</h1>
+<p class="mt-3 max-w-2xl text-muted">
+  Revisa la evidencia profesional, registra cada decisión y acompaña la vigencia
+  de las revisiones.
+</p>
+<a
+  routerLink="/veterinaria/nueva"
+  class="mt-5 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-white"
+  >Preparar acreditación</a
+>
+<form
+  [formGroup]="form"
+  (ngSubmit)="search()"
+  aria-label="Filtrar acreditaciones"
+  class="mt-8 rounded-3xl border border-line bg-white p-5 sm:p-6"
+>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div>
+      <label for="veterinary-status" class="mb-2 block text-sm font-semibold"
+        >Estado</label
+      ><select
+        id="veterinary-status"
+        formControlName="status"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="">Todos</option>
+        @for(status of statuses;track status.value){
+        <option [value]="status.value">{{status.label}}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label
+        for="veterinary-organization"
+        class="mb-2 block text-sm font-semibold"
+        >ID de organización</label
+      ><input
+        id="veterinary-organization"
+        formControlName="organizationId"
+        maxlength="36"
+        placeholder="UUID de empresa (opcional)"
+        [attr.aria-invalid]="form.controls.organizationId.invalid&&form.controls.organizationId.touched"
+        aria-describedby="veterinary-organization-help"
+        class="min-h-12 w-full rounded-xl border border-line bg-paper px-4"
+      />
+      <p id="veterinary-organization-help" class="mt-2 text-xs text-muted">
+        Usa el ID disponible en el detalle de la empresa.
+      </p>
+    </div>
+    <div>
+      <label for="veterinary-limit" class="mb-2 block text-sm font-semibold"
+        >Resultados por página</label
+      ><select
+        id="veterinary-limit"
+        formControlName="limit"
+        class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+      >
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+  </div>
+  <div class="mt-5 flex flex-wrap gap-3">
+    <button
+      type="submit"
+      class="min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white"
+    >
+      Filtrar</button
+    ><button
+      type="button"
+      (click)="clear()"
+      class="min-h-11 rounded-xl border border-line px-5 text-sm font-medium"
+    >
+      Limpiar filtros
+    </button>
+  </div>
+</form>
+<details class="mt-4 rounded-2xl border border-line bg-white p-5">
+  <summary class="cursor-pointer text-sm font-semibold">
+    Abrir una acreditación por ID
+  </summary>
+  <form
+    [formGroup]="lookup"
+    (ngSubmit)="open()"
+    aria-label="Consultar acreditación por ID"
+    class="mt-4"
+  >
+    <label for="credential-lookup" class="mb-2 block text-sm font-semibold"
+      >ID de acreditación</label
+    >
+    <div class="flex flex-wrap gap-3">
+      <input
+        id="credential-lookup"
+        formControlName="credentialId"
+        maxlength="36"
+        [attr.aria-invalid]="lookup.controls.credentialId.invalid&&lookup.controls.credentialId.touched"
+        aria-describedby="credential-lookup-help"
+        class="min-h-12 min-w-0 flex-1 rounded-xl border border-line bg-paper px-4"
+      /><button
+        type="submit"
+        class="min-h-12 rounded-xl border border-line px-5 text-sm font-semibold"
+      >
+        Abrir acreditación
+      </button>
+    </div>
+    <p id="credential-lookup-help" class="mt-2 text-xs text-muted">
+      Introduce el UUID completo. El servidor comprobará el acceso.
+    </p>
+  </form>
+</details>
+<div class="mt-6"><app-problem [problem]="store.problem()" /></div>
+@if(store.loading()){
+<p role="status" class="mt-8 text-sm text-muted">Cargando acreditaciones…</p>
+}@else if(store.problem()){<button
+  type="button"
+  (click)="store.load(filters())"
+  class="mt-4 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar</button
+>}@else{
+<p role="status" class="mt-6 text-sm text-muted">
+  {{store.total()}} acreditaciones encontradas
+</p>
+<ul class="mt-4 space-y-3" aria-label="Resultados de acreditaciones">
+  @for(c of store.entities();track c.id){
+  <li class="rounded-2xl border border-line bg-white p-5">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="min-w-0">
+        <p class="text-xs text-muted">{{c.professionLabel}}</p>
+        <a
+          [routerLink]="[c.id]"
+          class="mt-2 inline-block font-semibold text-primary hover:underline"
+          >Matrícula {{c.registrationNumber}}</a
+        >
+        <p class="mt-2 text-sm break-words text-muted">{{c.university}}</p>
+      </div>
+      <app-credential-badge [credential]="c" />
+    </div>
+    <div class="mt-4 grid gap-2 text-xs text-muted sm:grid-cols-2">
+      <p class="break-all">Profesional: {{c.professionalId}}</p>
+      <p class="break-all">Organización: {{c.organizationId}}</p>
+    </div>
+    @if(c.verifiedUntil){
+    <p class="mt-3 text-xs text-muted">
+      Nueva revisión antes de {{c.verifiedUntil|date:'medium'}}
+    </p>
+    }
+  </li>
+  }@empty{
+  <li class="rounded-2xl border border-line bg-white p-8 text-center">
+    <h2 class="font-semibold">
+      No encontramos acreditaciones con estos filtros.
+    </h2>
+    <p class="mt-3 text-sm text-muted">Prueba otro estado u organización.</p>
+  </li>
+  }
+</ul>
+<app-pagination
+  [page]="store.page()"
+  [limit]="store.limit()"
+  [total]="store.total()"
+  (pageChange)="page($event)"
+/>}

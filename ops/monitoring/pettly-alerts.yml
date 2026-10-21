@@ -1,0 +1,43 @@
+groups:
+  - name: pettly
+    rules:
+      - alert: PettlyApiUnavailable
+        expr: up{job="pettly-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          {
+            summary: 'Pettly metrics scrape unavailable; check API/readiness/token.',
+          }
+      - alert: PettlyServerErrors
+        expr: sum(rate(pettly_http_server_errors_total[5m])) / clamp_min(sum(rate(pettly_http_requests_total[5m])), 0.01) > 0.02
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: 'More than 2 percent server errors; inspect safe request IDs.',
+          }
+      - alert: PettlyLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(pettly_http_duration_seconds_bucket[5m]))) > 1
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: 'Pettly HTTP p95 above one second.' }
+      - alert: PettlyNotificationLag
+        expr: pettly_notification_oldest_due_seconds > 300
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          { summary: 'Due notification backlog older than five minutes.' }
+      - alert: PettlyDeliveryFailure
+        expr: pettly_notification_failed_24h > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          {
+            summary: 'Terminal email delivery failure requires superadmin review.',
+          }
+      - alert: PettlyWorkerMissing
+        expr: pettly_worker_heartbeat == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: 'No current Pettly worker heartbeat.' }

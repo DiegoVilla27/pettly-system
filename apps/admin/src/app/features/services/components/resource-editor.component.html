@@ -1,0 +1,223 @@
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="resource-editor-title"
+>
+  <h2 id="resource-editor-title" class="text-xl font-semibold">
+    {{ resource() ? 'Editar recurso y horarios' : 'Crear recurso' }}
+  </h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Una estación, profesional o conjunto de habitaciones puede compartirse entre
+    servicios. La capacidad y el calendario deben respetar las reservas
+    aceptadas.
+  </p>
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    class="mt-6"
+    aria-label="Perfil y horarios del recurso"
+  >
+    <fieldset [disabled]="blocked()" class="space-y-5">
+      <legend class="sr-only">Configuración del recurso</legend>
+      <div>
+        <label for="resource-name" class="mb-2 block text-sm font-semibold"
+          >Nombre del recurso</label
+        ><input
+          id="resource-name"
+          formControlName="name"
+          maxlength="100"
+          [attr.aria-invalid]="
+            form.controls.name.touched && form.controls.name.invalid
+          "
+          aria-describedby="resource-name-help"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+        />
+        <p id="resource-name-help" class="mt-2 text-xs text-muted">
+          Entre 2 y 100 caracteres.
+        </p>
+      </div>
+      <div class="grid gap-5 sm:grid-cols-3">
+        <div>
+          <label for="resource-kind" class="mb-2 block text-sm font-semibold"
+            >Modalidad del recurso</label
+          ><select
+            id="resource-kind"
+            formControlName="kind"
+            [attr.aria-disabled]="!!resource()"
+            aria-describedby="resource-kind-help"
+            class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+          >
+            @if (!resource() || resource()?.kind === 'appointment') {
+              <option value="appointment">Citas</option>
+            }
+            @if (!resource() || resource()?.kind === 'lodging') {
+              <option value="lodging">Alojamiento</option>
+            }
+          </select>
+          <p id="resource-kind-help" class="mt-2 text-xs text-muted">
+            La modalidad no se cambia después de crear.
+          </p>
+        </div>
+        <div>
+          <label
+            for="resource-capacity"
+            class="mb-2 block text-sm font-semibold"
+            >Capacidad simultánea</label
+          ><input
+            id="resource-capacity"
+            type="number"
+            formControlName="capacity"
+            min="1"
+            max="100"
+            step="1"
+            [attr.aria-invalid]="
+              form.controls.capacity.touched && form.controls.capacity.invalid
+            "
+            aria-describedby="resource-capacity-help"
+            class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+          />
+          <p id="resource-capacity-help" class="mt-2 text-xs text-muted">
+            De 1 a 100 mascotas. Clínica veterinaria requiere un profesional
+            dedicado de capacidad uno.
+          </p>
+        </div>
+        <div>
+          <label for="resource-status" class="mb-2 block text-sm font-semibold"
+            >Estado del recurso</label
+          ><select
+            id="resource-status"
+            formControlName="status"
+            class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+          >
+            <option value="active">Activo</option>
+            <option value="inactive">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <section aria-labelledby="resource-weekly-title">
+        <h3 id="resource-weekly-title" class="font-semibold">
+          Horario semanal · Colombia
+        </h3>
+        <p class="mt-2 text-xs leading-relaxed text-muted">
+          America/Bogota (UTC−05:00). Hasta 21 intervalos, sin solapamientos.
+          Citas en pasos de 15 minutos; 24:00 solo como cierre. Alojamiento usa
+          días completos.
+        </p>
+        <div formArrayName="windows" class="mt-4 space-y-4">
+          @for (w of form.controls.windows.controls; track w; let i = $index) {
+            <fieldset
+              [formGroupName]="i"
+              class="rounded-2xl border border-line p-4"
+            >
+              <legend class="px-2 text-xs font-semibold">
+                Intervalo {{ i + 1 }}
+              </legend>
+              <div class="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label
+                    [for]="'window-day-' + i"
+                    class="mb-2 block text-sm font-semibold"
+                    >Día {{ i + 1 }}</label
+                  ><select
+                    [id]="'window-day-' + i"
+                    formControlName="day"
+                    class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+                  >
+                    @for (d of weekdays; track d.value) {
+                      <option [value]="d.value">{{ d.label }}</option>
+                    }
+                  </select>
+                </div>
+                @if (kind() === 'appointment') {
+                  <div>
+                    <label
+                      [for]="'window-start-' + i"
+                      class="mb-2 block text-sm font-semibold"
+                      >Inicio {{ i + 1 }}</label
+                    ><input
+                      [id]="'window-start-' + i"
+                      formControlName="start"
+                      maxlength="5"
+                      placeholder="08:00"
+                      class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      [for]="'window-end-' + i"
+                      class="mb-2 block text-sm font-semibold"
+                      >Cierre {{ i + 1 }}</label
+                    ><input
+                      [id]="'window-end-' + i"
+                      formControlName="end"
+                      maxlength="5"
+                      placeholder="18:00"
+                      class="min-h-12 w-full rounded-xl border border-line bg-white px-3"
+                    />
+                  </div>
+                } @else {
+                  <p class="text-sm text-muted sm:col-span-2">
+                    Día completo · 00:00 a 24:00
+                  </p>
+                }
+              </div>
+              <button
+                type="button"
+                (click)="removeWindow(i)"
+                [disabled]="form.controls.windows.length <= 1"
+                [attr.aria-label]="'Quitar intervalo ' + (i + 1)"
+                class="mt-3 min-h-11 rounded-xl border border-line px-3 text-sm disabled:opacity-50"
+              >
+                Quitar intervalo
+              </button>
+            </fieldset>
+          }
+        </div>
+        <button
+          type="button"
+          (click)="addWindow()"
+          [disabled]="form.controls.windows.length >= 21"
+          class="mt-4 min-h-11 rounded-xl border border-line px-4 text-sm disabled:opacity-50"
+        >
+          Añadir intervalo
+        </button>
+      </section>
+      <div>
+        <label for="resource-reason" class="mb-2 block text-sm font-semibold"
+          >Motivo del cambio de recurso</label
+        ><textarea
+          id="resource-reason"
+          formControlName="reason"
+          rows="3"
+          maxlength="500"
+          [attr.aria-invalid]="
+            form.controls.reason.touched && form.controls.reason.invalid
+          "
+          aria-describedby="resource-reason-help"
+          class="w-full rounded-xl border border-line bg-paper px-3 py-3"
+        ></textarea>
+        <p id="resource-reason-help" class="mt-2 text-xs text-muted">
+          Entre 10 y 500 caracteres, sin saltos de línea. Se conserva en el
+          historial.
+        </p>
+      </div>
+      @if (form.touched && form.hasError('calendar')) {
+        <p
+          tabindex="-1"
+          data-calendar-error
+          role="alert"
+          class="rounded-xl bg-paper p-4 text-sm"
+        >
+          Revisa el horario: los intervalos deben usar cuartos de hora, terminar
+          después del inicio y no solaparse en el mismo día. Alojamiento admite
+          un intervalo completo por día.
+        </p>
+      }
+      <button
+        type="submit"
+        class="min-h-12 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        Guardar recurso
+      </button>
+    </fieldset>
+  </form>
+</section>

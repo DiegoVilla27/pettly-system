@@ -1,0 +1,84 @@
+<h3 class="mt-6 font-semibold">Eventos del proveedor</h3>
+<ul class="mt-4 space-y-4">
+  @for (e of evidence().events; track e.id) {
+    <li class="rounded-xl border border-line p-4">
+      <p class="text-sm font-semibold">{{ outcomes[e.outcome] }}</p>
+      <p class="mt-1 text-xs text-muted">
+        {{ date(e.createdAt) }} · {{ e.provider }}
+      </p>
+      <dl class="mt-3 space-y-2 text-xs">
+        <div>
+          <dt class="text-muted">Identificador del evento</dt>
+          <dd class="break-all">{{ e.eventId }}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Referencia observada</dt>
+          <dd class="break-all">{{ e.observation.reference }}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Pago observado</dt>
+          <dd class="break-all">{{ e.observation.paymentId }}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Importe observado (unidades mínimas)</dt>
+          <dd>
+            {{ e.observation.amountMinor }} · {{ e.observation.currency }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-muted">Estado observado</dt>
+          <dd>
+            {{ e.observation.status }} ·
+            {{ distributions[e.observation.distributionStatus] }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-muted">Cargo observado (unidades mínimas)</dt>
+          <dd>
+            {{
+              e.observation.feeMinor === null
+                ? 'No informado'
+                : e.observation.feeMinor
+            }}
+          </dd>
+        </div>
+      </dl>
+      @if (
+        e.observation.amountMinor !== payment().amountMinor ||
+        e.observation.currency !== payment().currency ||
+        e.observation.paymentId !== payment().id ||
+        (payment().reference && e.observation.reference !== payment().reference)
+      ) {
+        <p class="mt-3 rounded-lg bg-paper p-3 text-sm">
+          La observación difiere del intento aceptado. Requiere revisión; no
+          reemplaza sus condiciones.
+        </p>
+      }
+    </li>
+  } @empty {
+    <li class="text-sm text-muted">No hay eventos registrados.</li>
+  }
+</ul>
+<h3 class="mt-6 font-semibold">Registros de captura</h3>
+<p class="mt-2 text-sm text-muted">
+  Una captura registra fondos observados. No prueba la distribución a la
+  empresa.
+</p>
+<ul class="mt-4 space-y-4">
+  @for (l of evidence().ledger; track l.id) {
+    <li class="rounded-xl border border-line p-4">
+      <p class="font-semibold">{{ money(l.amountMinor) }}</p>
+      <p class="mt-2 text-sm">
+        Pettly: {{ money(l.platformMinor) }} · Empresa:
+        {{ money(l.sellerMinor) }}
+      </p>
+      <p class="mt-2 text-xs text-muted">{{ date(l.createdAt) }}</p>
+      <p class="mt-2 text-xs break-all">Registro {{ l.id }}</p>
+      <p class="mt-1 text-xs break-all text-muted">
+        Evento interno {{ l.eventId }}
+      </p>
+    </li>
+  } @empty {
+    <li class="text-sm text-muted">No hay capturas registradas.</li>
+  }
+</ul>

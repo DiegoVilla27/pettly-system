@@ -1,0 +1,9 @@
+{$PETTLY_API_DOMAIN} {
+ reverse_proxy 127.0.0.1:3100
+}
+{$PETTLY_WEB_DOMAIN} {
+ reverse_proxy 127.0.0.1:3101
+}
+{$PETTLY_ADMIN_DOMAIN} {
+ reverse_proxy 127.0.0.1:4300
+}

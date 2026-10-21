@@ -1,0 +1,16 @@
+{
+  "createdAt": "2026-10-09T13:43:59.126Z",
+  "target": "http://127.0.0.1:3100",
+  "concurrency": 3,
+  "seconds": 5,
+  "requests": 265,
+  "requestsPerSecond": 53,
+  "p50Ms": 5,
+  "p95Ms": 13,
+  "p99Ms": 21,
+  "errors": 0,
+  "statuses": {
+    "200": 265
+  },
+  "scope": "Local bounded read-only smoke load; 429 separately counted, no production capacity claim."
+}

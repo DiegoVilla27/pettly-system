@@ -1,0 +1,56 @@
+{
+  "name": "@pettly/worker",
+  "private": true,
+  "version": "0.0.1",
+  "nx": {
+    "name": "worker",
+    "targets": {
+      "build": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "api:prisma-generate",
+          "notifications-runtime:build"
+        ],
+        "outputs": [
+          "{projectRoot}/dist"
+        ],
+        "options": {
+          "command": "node scripts/build-worker.mjs"
+        }
+      },
+      "serve": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/worker/dist/main.js"
+        }
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "api:prisma-generate",
+          "notifications-runtime:build"
+        ],
+        "options": {
+          "command": "tsc --noEmit -p apps/worker/tsconfig.json"
+        }
+      },
+      "lint": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "pnpm exec eslint apps/worker/src"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.0",
+    "bullmq": "^6.3.11",
+    "dotenv": "^18.0.6",
+    "nodemailer": "^10.0.16",
+    "@pettly/notifications-runtime": "workspace:*"
+  }
+}

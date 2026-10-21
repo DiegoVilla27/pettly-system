@@ -1,0 +1,62 @@
+name: Reusable Docker CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Production images and HTTP smoke checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HUSKY: '0'
+      CI_COMPOSE_PROJECT: pettly-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      CI_NETWORK_NAME: pettly-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      API_PORT: '13100'
+      WEB_PORT: '13101'
+      ADMIN_PORT: '14300'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate Compose
+        run: node scripts/ci/validate-docker-build.mjs
+      - name: Build production images
+        uses: docker/bake-action@v6
+        with:
+          files: |
+            docker-compose.yml
+            docker-compose.ci.yml
+          load: true
+          set: |
+            api.cache-from=type=gha,scope=pettly-api
+            api.cache-to=type=gha,scope=pettly-api,mode=max
+            web.cache-from=type=gha,scope=pettly-web
+            web.cache-to=type=gha,scope=pettly-web,mode=max
+            admin.cache-from=type=gha,scope=pettly-admin
+            admin.cache-to=type=gha,scope=pettly-admin,mode=max
+      - name: Start isolated PostgreSQL and applications
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build --wait --wait-timeout 180
+      - name: Verify HTTP, SPA assets and database network
+        run: node scripts/ci/smoke-docker.mjs
+      - name: Collect container diagnostics
+        if: always()
+        run: |
+          mkdir -p /tmp/pettly-ci-logs
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml ps -a > /tmp/pettly-ci-logs/status.txt
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color > /tmp/pettly-ci-logs/containers.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: docker-diagnostics
+          path: /tmp/pettly-ci-logs/
+          retention-days: 7
+      - name: Remove ephemeral containers, volumes and network
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down --volumes --remove-orphans

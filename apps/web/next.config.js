@@ -1,9 +1,10 @@
 //@ts-check
+const path = require('node:path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Next.js options go here
-  // See: https://nextjs.org/docs/app/api-reference/config/next-config-js
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../..'),
 };
 
 module.exports = nextConfig;

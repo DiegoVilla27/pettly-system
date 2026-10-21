@@ -1,0 +1,200 @@
+<a
+  routerLink="/inventario"
+  [queryParams]="{organizationId:context().organizationId}"
+  class="text-sm font-medium text-primary hover:underline"
+  >← Volver al inventario</a
+>
+<div class="mt-5"><app-problem [problem]="store.problem()" /></div>
+@if(store.loading()){
+<p role="status" class="mt-5 text-sm text-muted">Cargando existencias…</p>
+}@else if(store.row();as row){
+<div class="mt-5 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-semibold tracking-tight break-words">
+      {{row.productName}}
+    </h1>
+    <p class="mt-3 text-sm break-all text-muted">
+      {{row.sku}} · {{row.variantStatus==='active'?'Variante activa':'Variante
+      archivada'}} · Producto {{productLabels[row.productStatus]}}
+    </p>
+  </div>
+  <button
+    type="button"
+    (click)="refresh()"
+    [disabled]="store.busy()||!!store.intent()"
+    class="min-h-11 rounded-xl border border-line bg-white px-4 text-sm font-medium disabled:opacity-50"
+  >
+    Actualizar inventario
+  </button>
+</div>
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="stock-balance-title"
+>
+  <h2 id="stock-balance-title" class="text-xl font-semibold">
+    Existencias de la variante
+  </h2>
+  <dl class="mt-6 grid grid-cols-3 gap-3">
+    <div>
+      <dt class="text-xs text-muted">Físico</dt>
+      <dd
+        class="mt-2 text-base font-semibold break-all tabular-nums sm:text-2xl"
+      >
+        {{row.stock.onHand}}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs text-muted">Reservado</dt>
+      <dd
+        class="mt-2 text-base font-semibold break-all tabular-nums sm:text-2xl"
+      >
+        {{row.stock.reserved}}
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs text-muted">Disponible</dt>
+      <dd
+        class="mt-2 text-base font-semibold break-all text-primary tabular-nums sm:text-2xl"
+      >
+        {{row.stock.available}}
+      </dd>
+    </div>
+  </dl>
+  <p class="mt-5 text-xs text-muted">
+    Versión {{row.stock.version}} · Actualizado
+    {{row.stock.updatedAt|date:'medium'}}
+  </p>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Disponible = físico − reservado. Este saldo puede cambiar por pedidos u
+    otros operadores; cada movimiento vuelve a validar la versión y las
+    reservas.
+  </p>
+  <p class="mt-4 text-xs break-all text-muted">
+    Empresa: {{row.organizationId}} · Variante: {{row.id}}
+  </p>
+</section>
+@if(store.result();as result){
+<p role="status" class="mt-5 rounded-2xl bg-sage p-5 text-sm text-primary">
+  Movimiento registrado: {{movementLabels[result.movement.kind]}}. Físico
+  {{result.stock.onHand}}, reservado {{result.stock.reserved}}, disponible
+  {{result.stock.available}}.
+</p>
+} @if(store.uncertain()){
+<section
+  aria-label="Movimiento pendiente de confirmación"
+  class="mt-5 rounded-2xl border border-line bg-paper p-5"
+>
+  <h2 class="font-semibold">Confirma la operación pendiente</h2>
+  <p class="mt-3 text-sm leading-relaxed">
+    El reintento utiliza exactamente la misma cantidad, motivo, versión y clave.
+    Mantén esta pantalla abierta hasta confirmar el resultado; no registres la
+    operación desde otra pestaña.
+  </p>
+  <button
+    type="button"
+    (click)="store.record(null)"
+    [disabled]="store.busy()"
+    class="mt-5 min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+  >
+    Reintentar el mismo movimiento
+  </button>
+</section>
+} @if(writable()){<app-movement-form
+  [row]="row"
+  [busy]="store.busy()"
+  [blocked]="!!store.intent()"
+  (submitted)="record($event)"
+/>}@else{
+<p role="status" class="mt-6 rounded-2xl bg-paper p-5 text-sm text-muted">
+  Esta variante o su producto está archivado. Puedes consultar el saldo y el
+  historial; no se permiten nuevos movimientos físicos.
+</p>
+}
+<section
+  class="mt-6 rounded-3xl border border-line bg-white p-5 sm:p-7"
+  aria-labelledby="stock-ledger-title"
+>
+  <h2 id="stock-ledger-title" class="text-xl font-semibold">
+    Historial de movimientos
+  </h2>
+  <p class="mt-3 text-sm text-muted">
+    Registro inmutable de entradas, salidas, ajustes y cambios de reservas. Las
+    cuentas se identifican por su UUID; las operaciones automáticas indican
+    Sistema.
+  </p>
+  <div class="mt-4"><app-problem [problem]="store.ledgerProblem()" /></div>
+  @if(store.ledgerLoading()){
+  <p role="status" class="mt-5 text-sm text-muted">Cargando historial…</p>
+  }@else if(store.ledgerProblem()){<button
+    type="button"
+    (click)="store.loadLedger(ledgerQuery())"
+    class="mt-5 min-h-11 rounded-xl border border-line px-4"
+  >
+    Reintentar historial</button
+  >}@else if(store.ledger();as ledger){
+  <ol class="mt-6 space-y-4" aria-label="Movimientos de inventario">
+    @for(m of ledger.items;track m.id){
+    <li class="rounded-2xl border border-line p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="text-sm font-semibold">{{movementLabels[m.kind]}}</h3>
+        <time [attr.datetime]="m.createdAt" class="text-xs text-muted"
+          >{{m.createdAt|date:'medium'}}</time
+        >
+      </div>
+      <p class="mt-3 text-sm break-words">{{m.reason}}</p>
+      <dl class="mt-4 grid grid-cols-2 gap-4 text-xs sm:grid-cols-3">
+        <div>
+          <dt class="text-muted">Cambio físico</dt>
+          <dd class="mt-1">{{m.onHandDelta>0?'+':''}}{{m.onHandDelta}}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Cambio reservado</dt>
+          <dd class="mt-1">{{m.reservedDelta>0?'+':''}}{{m.reservedDelta}}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Saldo resultante</dt>
+          <dd class="mt-1">
+            {{m.onHandAfter}} físico · {{m.reservedAfter}} reservado
+          </dd>
+        </div>
+        <div>
+          <dt class="text-muted">Registrado por</dt>
+          <dd class="mt-1 break-all">{{m.actorId??'Sistema'}}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Versión resultante</dt>
+          <dd class="mt-1">{{m.versionAfter}}</dd>
+        </div>
+        <div>
+          <dt class="text-muted">Referencia de solicitud</dt>
+          <dd class="mt-1 break-all">{{m.requestId}}</dd>
+        </div>
+      </dl>
+      @if(m.holdId){
+      <p class="mt-3 text-xs break-all text-muted">Reserva: {{m.holdId}}</p>
+      }
+    </li>
+    }@empty{
+    <li class="text-sm text-muted">Todavía no hay movimientos registrados.</li>
+    }
+  </ol>
+  <app-pagination
+    [page]="ledger.page"
+    [total]="ledger.total"
+    [limit]="ledger.limit"
+    (pageChange)="page($event)"
+  />
+  }
+</section>
+}@else{
+<h1 class="mt-5 text-2xl font-semibold">Inventario no disponible</h1>
+<p class="mt-3 text-sm text-muted">
+  Revisa el acceso de la empresa y la variante.
+</p>
+<button
+  type="button"
+  (click)="refresh()"
+  class="mt-5 min-h-11 rounded-xl border border-line px-4"
+>
+  Reintentar consulta</button
+>}

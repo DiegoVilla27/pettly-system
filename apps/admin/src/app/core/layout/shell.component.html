@@ -1,0 +1,244 @@
+<div class="min-h-dvh bg-paper lg:grid lg:grid-cols-workspace">
+  <aside
+    class="flex flex-col border-b border-line bg-white lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto lg:border-e lg:border-b-0"
+    aria-label="Espacio de trabajo"
+  >
+    <div class="flex items-center justify-between px-6 py-6 lg:px-7 lg:py-9">
+      <a routerLink="/inicio" aria-label="Pettly, inicio"><app-brand /></a
+      ><button
+        type="button"
+        (click)="expanded.set(!expanded())"
+        [attr.aria-expanded]="expanded()"
+        aria-controls="workspace-navigation"
+        [attr.aria-label]="
+          expanded() ? 'Cerrar navegación' : 'Abrir navegación'
+        "
+        class="flex size-11 items-center justify-center rounded-xl border border-line lg:hidden"
+      >
+        <app-icon [name]="expanded() ? 'close' : 'menu'" />
+      </button>
+    </div>
+    <nav
+      id="workspace-navigation"
+      [class.hidden]="!expanded()"
+      class="px-4 pb-5 lg:block"
+      aria-label="Navegación principal"
+    >
+      <p
+        class="mb-3 px-3 text-xs font-semibold tracking-wider text-muted uppercase"
+      >
+        Mi espacio
+      </p>
+      <a
+        routerLink="/inicio"
+        routerLinkActive="nav-current"
+        ariaCurrentWhenActive="page"
+        (click)="expanded.set(false)"
+        class="mb-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+        ><app-icon name="home" />Inicio</a
+      >
+      <a
+        routerLink="/cuenta"
+        routerLinkActive="nav-current"
+        ariaCurrentWhenActive="page"
+        (click)="expanded.set(false)"
+        class="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+        ><app-icon name="person" />Mi cuenta</a
+      >
+      @if (canUseVeterinary()) {
+        <a
+          routerLink="/veterinaria"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="heart" />Veterinaria</a
+        >
+      }
+      @if (
+        session.identity()?.role === 'super_admin' ||
+        session.identity()?.organizations?.length
+      ) {
+        <a
+          routerLink="/organizaciones"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Organizaciones</a
+        >
+      }
+      @if (session.identity()?.role === 'super_admin') {
+        <a
+          routerLink="/usuarios"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="users" />Usuarios</a
+        >
+      }
+      @if (session.hasPermission('moderation.publications.review')) {
+        <a
+          routerLink="/catalogo"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Catálogo</a
+        >
+      }
+      @if (canManageProducts()) {
+        <a
+          routerLink="/productos"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Productos</a
+        >
+      }
+      @if (canUseServices()) {
+        <a
+          routerLink="/servicios"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="heart" />Servicios</a
+        >
+      }
+      <a
+        routerLink="/notificaciones"
+        routerLinkActive="nav-current"
+        ariaCurrentWhenActive="page"
+        (click)="expanded.set(false)"
+        class="mb-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+        ><app-icon name="check" />Notificaciones</a
+      >
+      @if (canManageAdoptions()) {
+        <a
+          routerLink="/adopciones"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="heart" />Adopciones</a
+        >
+      }
+      @if (canManageAnimals()) {
+        <a
+          routerLink="/animales"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Animales</a
+        >
+      }
+      @if (canReadPayments()) {
+        <a
+          routerLink="/pagos"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Pagos</a
+        >
+      }
+      @if (canConfigureCommercial()) {
+        <a
+          routerLink="/condiciones-comerciales"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Condiciones comerciales</a
+        >
+      }
+      @if (canManageOrders()) {
+        <a
+          routerLink="/pedidos"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Pedidos</a
+        >
+      }
+      @if (canManageBookings()) {
+        <a
+          routerLink="/reservas"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="heart" />Reservas</a
+        >
+      }
+      @if (canManageInventory()) {
+        <a
+          routerLink="/inventario"
+          routerLinkActive="nav-current"
+          ariaCurrentWhenActive="page"
+          (click)="expanded.set(false)"
+          class="mt-2 flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted hover:bg-paper hover:text-ink"
+          ><app-icon name="building" />Inventario</a
+        >
+      }
+    </nav>
+    <div class="mt-auto hidden px-6 pb-7 lg:block">
+      <div class="rounded-2xl bg-sage p-5">
+        <app-icon name="heart" />
+        <p class="mt-3 text-sm font-semibold">Cada cuidado cuenta.</p>
+        <p class="mt-2 text-xs leading-relaxed text-muted">
+          Gracias por ser parte de una comunidad que deja huella.
+        </p>
+      </div>
+    </div>
+  </aside>
+  <div class="min-w-0">
+    <header
+      class="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-white/80 px-6 py-5 sm:px-10"
+    >
+      <div>
+        <p class="text-sm font-semibold">Tu espacio en Pettly</p>
+        <p class="mt-1 text-xs text-muted">
+          {{ session.identity()?.roleLabel }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a
+          routerLink="/cuenta"
+          class="flex items-center gap-3 rounded-xl p-1.5"
+          aria-label="Ver mi cuenta"
+          ><span
+            class="flex size-10 items-center justify-center rounded-full bg-sage text-sm font-semibold text-primary"
+            aria-hidden="true"
+            >{{ session.identity()?.initials }}</span
+          ><span
+            class="hidden max-w-48 truncate text-sm font-semibold sm:block"
+            >{{ session.identity()?.fullName }}</span
+          ></a
+        ><button
+          type="button"
+          (click)="logout()"
+          [disabled]="session.busy()"
+          class="flex min-h-11 items-center gap-2 rounded-xl border border-line px-3 text-sm font-medium hover:bg-paper disabled:opacity-60"
+        >
+          <app-icon name="logout" />{{ session.busy() ? 'Espera…' : 'Salir' }}
+        </button>
+      </div>
+    </header>
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="mx-auto max-w-6xl px-6 py-8 sm:px-10 sm:py-12"
+    >
+      <app-problem [problem]="error()" /><router-outlet />
+    </main>
+    <footer class="px-6 pb-6 text-xs text-muted sm:px-10">
+      Pettly · Un lugar para quienes cuidan.
+    </footer>
+  </div>
+</div>

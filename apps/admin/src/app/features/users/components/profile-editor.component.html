@@ -1,0 +1,139 @@
+<form
+  [formGroup]="form"
+  (ngSubmit)="submit()"
+  novalidate
+  [attr.aria-busy]="busy()"
+  class="space-y-8"
+>
+  <fieldset [disabled]="busy()" class="space-y-6">
+    <legend class="mb-5 text-lg font-semibold">Datos de la cuenta</legend>
+    @if (!user()) {
+      <div>
+        <label for="invite-email" class="mb-2 block text-sm font-semibold"
+          >Correo electrónico</label
+        ><input
+          id="invite-email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          maxlength="254"
+          [attr.aria-invalid]="
+            form.controls.email.invalid && form.controls.email.touched
+          "
+          aria-describedby="invite-email-help"
+          class="min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3"
+        />
+        <p id="invite-email-help" class="mt-2 text-xs text-muted">
+          Se enviará una invitación. La persona elegirá su contraseña.
+        </p>
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <p class="mt-2 text-sm text-danger">Escribe un correo válido.</p>
+        }
+      </div>
+    } @else {
+      <div class="rounded-xl bg-paper p-4 text-sm">
+        <p class="font-semibold">{{ user()?.email }}</p>
+        <p class="mt-2 text-muted">
+          El cambio de correo requiere confirmación del propietario de la
+          cuenta.
+        </p>
+      </div>
+    }
+    <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+      @for (field of fields; track field.key) {
+        <div>
+          <label
+            [for]="'profile-' + field.key"
+            class="mb-2 block text-sm font-semibold"
+            >{{ field.label }}</label
+          >
+          @if (field.key === 'countryCode') {
+            <select
+              [id]="'profile-' + field.key"
+              [formControlName]="field.key"
+              [attr.autocomplete]="field.autocomplete"
+              [attr.aria-invalid]="
+                form.controls[field.key].invalid &&
+                form.controls[field.key].touched
+              "
+              [attr.aria-describedby]="'profile-' + field.key + '-help'"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3"
+            >
+              <option value="">Sin especificar</option>
+              @for (country of countries; track country.value) {
+                <option [value]="country.value">{{ country.label }}</option>
+              }
+            </select>
+          } @else {
+            <input
+              [id]="'profile-' + field.key"
+              [type]="field.type"
+              [formControlName]="field.key"
+              [attr.autocomplete]="field.autocomplete"
+              [attr.maxlength]="field.max"
+              [attr.aria-invalid]="
+                form.controls[field.key].invalid &&
+                form.controls[field.key].touched
+              "
+              [attr.aria-describedby]="'profile-' + field.key + '-help'"
+              class="min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3"
+            />
+          }
+          <p
+            [id]="'profile-' + field.key + '-help'"
+            class="mt-2 text-xs leading-relaxed"
+            [class.text-danger]="
+              form.controls[field.key].invalid &&
+              form.controls[field.key].touched
+            "
+            [class.text-muted]="
+              !(
+                form.controls[field.key].invalid &&
+                form.controls[field.key].touched
+              )
+            "
+          >
+            {{ field.help }}
+          </p>
+        </div>
+      }
+    </div>
+  </fieldset>
+  <div>
+    <label for="profile-reason" class="mb-2 block text-sm font-semibold"
+      >Motivo administrativo</label
+    ><textarea
+      id="profile-reason"
+      formControlName="reason"
+      rows="2"
+      maxlength="500"
+      [readOnly]="busy()"
+      [attr.aria-invalid]="
+        form.controls.reason.invalid && form.controls.reason.touched
+      "
+      aria-describedby="profile-reason-help"
+      class="w-full rounded-xl border border-line bg-white px-4 py-3"
+    ></textarea>
+    <p id="profile-reason-help" class="mt-2 text-xs text-muted">
+      Entre 10 y 500 caracteres, en una sola línea. Quedará registrado en
+      auditoría; evita datos personales innecesarios.
+    </p>
+    @if (form.controls.reason.invalid && form.controls.reason.touched) {
+      <p class="mt-2 text-sm text-danger">
+        Escribe un motivo válido antes de continuar.
+      </p>
+    }
+  </div>
+  @if (issue()) {
+    <p role="alert" class="text-sm text-danger">{{ issue() }}</p>
+  }
+  <button
+    type="submit"
+    [disabled]="busy()"
+    class="min-h-12 rounded-xl bg-primary px-6 py-3 font-semibold text-white hover:bg-primary-strong disabled:opacity-60"
+  >
+    {{
+      busy() ? 'Guardando…' : user() ? 'Guardar perfil' : 'Enviar invitación'
+    }}
+  </button>
+</form>

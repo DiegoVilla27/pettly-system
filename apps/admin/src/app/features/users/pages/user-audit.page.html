@@ -1,0 +1,69 @@
+<app-problem [problem]="store.problem()" /> @if(store.loading()){
+<p role="status" class="py-8 text-muted">Cargando cuenta…</p>
+} @else if(store.user();as user){<app-user-heading [user]="user" />
+<section class="mt-7" aria-labelledby="audit-title">
+  <h2 id="audit-title" class="text-xl font-semibold">
+    Historial administrativo
+  </h2>
+  <p class="mt-3 text-sm leading-relaxed text-muted">
+    Registro de acciones, motivos y responsables. No es un historial completo de
+    versiones del perfil. Los cambios de membresía se registran en la auditoría
+    de la organización.
+  </p>
+  <div class="mt-5"><app-problem [problem]="store.auditProblem()" /></div>
+  @if(store.auditLoading()){
+  <p role="status" class="mt-6 text-sm text-muted">Cargando auditoría…</p>
+  }@else if(store.audit();as audit){
+  <ol class="mt-6 space-y-4">
+    @for(entry of audit.items;track entry.id){
+    <li class="rounded-2xl border border-line bg-white p-5 sm:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h3 class="font-semibold">{{ label(entry.action) }}</h3>
+        <time [attr.datetime]="entry.createdAt" class="text-xs text-muted"
+          >{{ entry.createdAt | date:'dd/MM/yyyy HH:mm' }}</time
+        >
+      </div>
+      <p class="mt-4 text-sm break-words">{{ entry.reason }}</p>
+      <dl class="mt-5 grid gap-4 text-xs sm:grid-cols-2">
+        <div>
+          <dt class="text-muted">Cambio</dt>
+          <dd class="mt-2 break-words">
+            {{ entry.previousValue || '—' }} → {{ entry.nextValue || '—' }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-muted">Responsable (ID)</dt>
+          <dd class="mt-2 break-all">
+            {{ entry.actorId ?? 'Operador inicial del sistema' }}
+          </dd>
+        </div>
+        @if(entry.requestId){
+        <div>
+          <dt class="text-muted">Referencia de solicitud</dt>
+          <dd class="mt-2 break-all">{{ entry.requestId }}</dd>
+        </div>
+        }
+      </dl>
+    </li>
+    }@empty{
+    <li class="rounded-2xl border border-line bg-white p-6 text-sm text-muted">
+      No hay eventos administrativos registrados.
+    </li>
+    }
+  </ol>
+  <app-pagination
+    [page]="audit.page"
+    [total]="audit.total"
+    [limit]="audit.limit"
+    (pageChange)="page($event)"
+  />}@else if(store.auditProblem()){<button
+    type="button"
+    (click)="store.loadAudit(auditRequest())"
+    class="mt-4 min-h-11 rounded-xl border border-line px-4"
+  >
+    Reintentar auditoría</button
+  >}
+</section>
+}@else{
+<h1 class="text-2xl font-semibold">No pudimos cargar la cuenta</h1>
+}

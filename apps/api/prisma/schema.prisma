@@ -1,0 +1,981 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  payments                     PaymentAttempt[]
+  paymentAudits                PaymentAuditEntry[]
+  cart                         Cart?
+  checkoutQuotes               CheckoutQuote[]
+  orders                       Order[]
+  orderAudits                  OrderAuditEntry[]
+  policyAudits                 OrderPolicyAuditEntry[]
+  id                           String                   @id @db.Uuid
+  email                        String                   @unique @db.VarChar(254)
+  name                         String                   @db.VarChar(100)
+  lastName                     String?                  @db.VarChar(100)
+  dateOfBirth                  DateTime?                @db.Date
+  phone                        String?                  @db.VarChar(16)
+  address                      String?                  @db.VarChar(200)
+  addressLine2                 String?                  @db.VarChar(200)
+  countryCode                  String?                  @db.Char(2)
+  region                       String?                  @db.VarChar(100)
+  city                         String?                  @db.VarChar(100)
+  postalCode                   String?                  @db.VarChar(20)
+  globalRole                   String                   @default("user") @db.VarChar(20)
+  auditTargets                 UserAuditEntry[]         @relation("AuditTarget")
+  auditActions                 UserAuditEntry[]         @relation("AuditActor")
+  status                       String                   @default("active") @db.VarChar(20)
+  deletedAt                    DateTime?
+  emailVerifiedAt              DateTime?
+  createdAt                    DateTime                 @default(now())
+  updatedAt                    DateTime                 @updatedAt
+  credential                   Credential?
+  sessions                     Session[]
+  actionTokens                 ActionToken[]
+  memberships                  OrganizationMembership[]
+  organizationApplications     Organization[]           @relation("OrganizationApplicant")
+  organizationResponsibilities Organization[]           @relation("OrganizationResponsible")
+  organizationReviews          Organization[]           @relation("OrganizationReviewer")
+  organizationAuditActions     OrganizationAuditEntry[] @relation("OrganizationAuditActor")
+  organizationAuditTargets     OrganizationAuditEntry[] @relation("OrganizationAuditTarget")
+
+  ownedAnimals         Animal[]              @relation("AnimalOwner")
+  animalAuditActions   AnimalAuditEntry[]
+  uploadedMedia        MediaAsset[]
+  publicationCreations AdoptionPublication[] @relation("PublicationCreator")
+  publicationReviews   AdoptionPublication[] @relation("PublicationReviewer")
+  adoptionApplications AdoptionRequest[]     @relation("AdoptionApplicant")
+  adoptionReviews      AdoptionRequest[]     @relation("AdoptionReviewer")
+  productCreations     CatalogProduct[]      @relation("ProductCreator")
+  productReviews       CatalogProduct[]      @relation("ProductReviewer")
+  catalogAuditActions  CatalogAuditEntry[]
+  inventoryActions     InventoryMovement[]
+  adoptionAuditActions AdoptionAuditEntry[]
+
+  @@index([globalRole, status])
+  @@index([createdAt, id])
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_email_search_idx")
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_name_search_idx")
+  @@index([lastName(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_lastName_search_idx")
+  @@map("users")
+}
+
+model Credential {
+  userId       String  @id @db.Uuid
+  pendingEmail String? @db.VarChar(254)
+  passwordHash String
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_credentials")
+}
+
+model Session {
+  id        String         @id @db.Uuid
+  userId    String         @db.Uuid
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokens    RefreshToken[]
+
+  @@index([userId, revokedAt])
+  @@index([userId, revokedAt, createdAt, id])
+  @@map("auth_sessions")
+}
+
+model RefreshToken {
+  hash       String    @id @db.Char(64)
+  sessionId  String    @db.Uuid
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  session    Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("auth_refresh_tokens")
+}
+
+model ActionToken {
+  hash       String    @id @db.Char(64)
+  userId     String    @db.Uuid
+  purpose    String    @db.VarChar(20)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_action_tokens")
+}
+
+model OutboxMessage {
+  notificationId   String?            @db.Uuid
+  retryOfId        String?            @unique @db.Uuid
+  failureKind      String?            @db.VarChar(30)
+  mailPurpose      String?            @db.VarChar(40)
+  notification     InboxNotification? @relation(fields: [notificationId], references: [id], onDelete: Restrict)
+  notBefore        DateTime           @default(now())
+  subjectType      String?            @db.VarChar(30)
+  subjectId        String?            @db.Uuid
+  subjectVersion   Int?
+  deduplicationKey String?            @unique @db.VarChar(120)
+  id               String             @id @db.Uuid
+  correlationKey   String?            @db.Char(64)
+  encryptedPayload String?
+  expiresAt        DateTime
+  enqueuedAt       DateTime?
+  deliveredAt      DateTime?
+  failedAt         DateTime?
+  leaseUntil       DateTime?
+  attempts         Int                @default(0)
+  createdAt        DateTime           @default(now())
+
+  @@index([enqueuedAt, deliveredAt, failedAt, leaseUntil])
+  @@index([correlationKey])
+  @@index([subjectType, subjectId])
+  @@index([notBefore, deliveredAt, failedAt])
+  @@map("notification_outbox")
+}
+
+model UserAuditEntry {
+  id            String   @id @db.Uuid
+  actorId       String?  @db.Uuid
+  targetId      String   @db.Uuid
+  action        String   @db.VarChar(40)
+  previousValue String   @db.VarChar(20)
+  nextValue     String   @db.VarChar(20)
+  reason        String   @db.VarChar(500)
+  requestId     String?  @db.Uuid
+  createdAt     DateTime @default(now())
+  actor         User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+  target        User     @relation("AuditTarget", fields: [targetId], references: [id], onDelete: Restrict)
+
+  @@index([targetId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("user_audit_entries")
+}
+
+model Organization {
+  payments           PaymentAttempt[]
+  carts              Cart[]
+  orders             Order[]
+  orderPolicy        OrderPolicy?
+  policyAudits       OrderPolicyAuditEntry[]
+  id                 String                   @id @db.Uuid
+  name               String                   @db.VarChar(150)
+  type               String                   @db.VarChar(20)
+  status             String                   @default("draft") @db.VarChar(20)
+  version            Int                      @default(1)
+  legalName          String?                  @db.VarChar(150)
+  registrationNumber String?                  @db.VarChar(40)
+  description        String?                  @db.VarChar(2000)
+  email              String?                  @db.VarChar(254)
+  phone              String?                  @db.VarChar(16)
+  website            String?                  @db.VarChar(2048)
+  countryCode        String?                  @db.Char(2)
+  region             String?                  @db.VarChar(100)
+  city               String?                  @db.VarChar(100)
+  address            String?                  @db.VarChar(200)
+  addressLine2       String?                  @db.VarChar(200)
+  postalCode         String?                  @db.VarChar(20)
+  applicantId        String?                  @db.Uuid
+  responsibleUserId  String?                  @db.Uuid
+  reviewedBy         String?                  @db.Uuid
+  submittedAt        DateTime?
+  reviewedAt         DateTime?
+  reviewReason       String?                  @db.VarChar(500)
+  approvedAt         DateTime?
+  suspendedAt        DateTime?
+  deletedAt          DateTime?
+  applicant          User?                    @relation("OrganizationApplicant", fields: [applicantId], references: [id], onDelete: Restrict)
+  responsible        User?                    @relation("OrganizationResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
+  reviewer           User?                    @relation("OrganizationReviewer", fields: [reviewedBy], references: [id], onDelete: Restrict)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  memberships        OrganizationMembership[]
+  auditEntries       OrganizationAuditEntry[]
+
+  animals      Animal[]
+  publications AdoptionPublication[]
+
+  products CatalogProduct[]
+
+  @@unique([id, type])
+  @@unique([countryCode, registrationNumber])
+  @@index([status, createdAt, id])
+  @@index([applicantId, createdAt, id])
+  @@index([responsibleUserId])
+  @@index([reviewedBy])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "organizations_name_search_idx")
+  @@index([legalName(ops: raw("gin_trgm_ops"))], type: Gin, map: "organizations_legalName_search_idx")
+  @@map("organizations")
+}
+
+model OrganizationMembership {
+  id               String       @id @db.Uuid
+  organizationId   String       @db.Uuid
+  organizationType String       @db.VarChar(20)
+  userId           String       @db.Uuid
+  role             String       @db.VarChar(20)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     Organization @relation(fields: [organizationId, organizationType], references: [id, type], onDelete: Restrict)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId])
+  @@index([userId, organizationId])
+  @@index([role, userId])
+  @@map("organization_memberships")
+}
+
+model OrganizationAuditEntry {
+  id             String       @id @db.Uuid
+  actorId        String       @db.Uuid
+  organizationId String       @db.Uuid
+  targetUserId   String?      @db.Uuid
+  action         String       @db.VarChar(40)
+  previousValue  String?      @db.VarChar(64)
+  nextValue      String?      @db.VarChar(64)
+  reason         String       @db.VarChar(500)
+  requestId      String       @db.Uuid
+  createdAt      DateTime     @default(now())
+  actor          User         @relation("OrganizationAuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+  target         User?        @relation("OrganizationAuditTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("organization_audit_entries")
+}
+
+model Animal {
+  id                 String                @id @db.Uuid
+  ownerUserId        String?               @db.Uuid
+  organizationId     String?               @db.Uuid
+  name               String                @db.VarChar(100)
+  species            String                @db.VarChar(20)
+  breed              String?               @db.VarChar(100)
+  sex                String                @db.VarChar(10)
+  size               String                @db.VarChar(20)
+  dateOfBirth        DateTime?             @db.Date
+  birthDateEstimated Boolean               @default(false)
+  weightGrams        Int?
+  color              String?               @db.VarChar(100)
+  description        String?               @db.VarChar(2000)
+  healthNotes        String?               @db.VarChar(4000)
+  specialNeeds       String?               @db.VarChar(2000)
+  vaccinated         Boolean?
+  neutered           Boolean?
+  microchip          String?               @db.VarChar(30)
+  status             String                @default("active") @db.VarChar(20)
+  version            Int                   @default(1)
+  archivedAt         DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  owner              User?                 @relation("AnimalOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  organization       Organization?         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  photos             AnimalPhoto[]
+  audits             AnimalAuditEntry[]
+  publications       AdoptionPublication[]
+
+  @@unique([id, organizationId])
+  @@index([ownerUserId, status, createdAt, id])
+  @@index([organizationId, status, createdAt, id])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "animals_name_search_idx")
+  @@map("animals")
+}
+
+model MediaAsset {
+  id          String       @id @db.Uuid
+  uploadedBy  String       @db.Uuid
+  resourceId  String       @db.Uuid
+  contentType String       @db.VarChar(30)
+  byteLength  Int
+  width       Int
+  height      Int
+  bytes       Bytes?
+  createdAt   DateTime     @default(now())
+  deletedAt   DateTime?
+  uploader    User         @relation(fields: [uploadedBy], references: [id], onDelete: Restrict)
+  photo       AnimalPhoto?
+
+  catalogPhotos CatalogPhoto[]
+
+  @@index([resourceId, createdAt])
+  @@map("media_assets")
+}
+
+model AnimalPhoto {
+  id        String     @id @db.Uuid
+  animalId  String     @db.Uuid
+  mediaId   String     @unique @db.Uuid
+  position  Int
+  createdAt DateTime   @default(now())
+  animal    Animal     @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@index([animalId, position])
+  @@map("animal_photos")
+}
+
+model AnimalAuditEntry {
+  id        String   @id @db.Uuid
+  actorId   String   @db.Uuid
+  animalId  String   @db.Uuid
+  action    String   @db.VarChar(40)
+  reason    String   @db.VarChar(500)
+  requestId String   @db.Uuid
+  createdAt DateTime @default(now())
+  actor     User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Restrict)
+
+  @@index([animalId, createdAt, id])
+  @@map("animal_audit_entries")
+}
+
+model AdoptionPublication {
+  id             String               @id @db.Uuid
+  animalId       String               @db.Uuid
+  organizationId String               @db.Uuid
+  title          String               @db.VarChar(150)
+  description    String               @db.VarChar(4000)
+  conditions     String               @db.VarChar(2000)
+  countryCode    String               @db.Char(2)
+  city           String               @db.VarChar(100)
+  status         String               @default("draft") @db.VarChar(20)
+  version        Int                  @default(1)
+  snapshot       Json?
+  createdBy      String               @db.Uuid
+  reviewedBy     String?              @db.Uuid
+  reviewedAt     DateTime?
+  reviewReason   String?              @db.VarChar(500)
+  submittedAt    DateTime?
+  publishedAt    DateTime?
+  closedAt       DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  animal         Animal               @relation(fields: [animalId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  creator        User                 @relation("PublicationCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  reviewer       User?                @relation("PublicationReviewer", fields: [reviewedBy], references: [id], onDelete: Restrict)
+  requests       AdoptionRequest[]
+  audits         AdoptionAuditEntry[]
+
+  @@index([status, createdAt, id])
+  @@index([organizationId, status, createdAt, id])
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "adoption_publications_title_search_idx")
+  @@map("adoption_publications")
+}
+
+model AdoptionRequest {
+  id                 String               @id @db.Uuid
+  publicationId      String               @db.Uuid
+  applicantId        String               @db.Uuid
+  message            String               @db.VarChar(2000)
+  publicationVersion Int
+  conditionsAccepted String               @db.VarChar(2000)
+  consentedAt        DateTime
+  status             String               @default("submitted") @db.VarChar(20)
+  version            Int                  @default(1)
+  reviewedBy         String?              @db.Uuid
+  reviewedAt         DateTime?
+  reviewReason       String?              @db.VarChar(500)
+  completedAt        DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  publication        AdoptionPublication  @relation(fields: [publicationId], references: [id], onDelete: Restrict)
+  applicant          User                 @relation("AdoptionApplicant", fields: [applicantId], references: [id], onDelete: Restrict)
+  reviewer           User?                @relation("AdoptionReviewer", fields: [reviewedBy], references: [id], onDelete: Restrict)
+  audits             AdoptionAuditEntry[]
+
+  @@index([publicationId, status, createdAt, id])
+  @@index([applicantId, createdAt, id])
+  @@map("adoption_requests")
+}
+
+model AdoptionAuditEntry {
+  id            String              @id @db.Uuid
+  actorId       String              @db.Uuid
+  publicationId String              @db.Uuid
+  requestId     String?             @db.Uuid
+  action        String              @db.VarChar(40)
+  reason        String              @db.VarChar(500)
+  correlationId String              @db.Uuid
+  createdAt     DateTime            @default(now())
+  actor         User                @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  publication   AdoptionPublication @relation(fields: [publicationId], references: [id], onDelete: Restrict)
+  request       AdoptionRequest?    @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  @@index([publicationId, createdAt, id])
+  @@map("adoption_audit_entries")
+}
+
+model CatalogCategory {
+  id          String              @id @db.Uuid
+  name        String              @db.VarChar(100)
+  slug        String              @unique @db.VarChar(100)
+  description String?             @db.VarChar(1000)
+  status      String              @default("active") @db.VarChar(20)
+  version     Int                 @default(1)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime
+  products    CatalogProduct[]
+  audits      CatalogAuditEntry[]
+
+  @@map("catalog_categories")
+}
+
+model CatalogProduct {
+  id             String              @id @db.Uuid
+  organizationId String              @db.Uuid
+  categoryId     String              @db.Uuid
+  name           String              @db.VarChar(150)
+  description    String              @db.VarChar(4000)
+  brand          String?             @db.VarChar(100)
+  currency       String              @db.Char(3)
+  status         String              @default("draft") @db.VarChar(20)
+  version        Int                 @default(1)
+  createdBy      String              @db.Uuid
+  reviewedBy     String?             @db.Uuid
+  reviewedAt     DateTime?
+  reviewReason   String?             @db.VarChar(500)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category       CatalogCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  creator        User                @relation("ProductCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  reviewer       User?               @relation("ProductReviewer", fields: [reviewedBy], references: [id], onDelete: Restrict)
+  variants       CatalogVariant[]
+  photos         CatalogPhoto[]
+  audits         CatalogAuditEntry[]
+
+  @@unique([id, organizationId])
+  @@index([organizationId, status, createdAt, id])
+  @@index([status, categoryId, createdAt, id])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "catalog_products_name_search_idx")
+  @@map("catalog_products")
+}
+
+model CatalogVariant {
+  id             String              @id @db.Uuid
+  productId      String              @db.Uuid
+  organizationId String              @db.Uuid
+  sku            String              @db.VarChar(64)
+  priceMinor     Int
+  attributes     Json
+  status         String              @default("active") @db.VarChar(20)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime
+  product        CatalogProduct      @relation(fields: [productId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  stock          InventoryStock?
+  holds          InventoryHold[]
+  movements      InventoryMovement[]
+
+  @@unique([organizationId, sku])
+  @@unique([id, organizationId])
+  @@index([productId, status])
+  @@map("catalog_variants")
+}
+
+model CatalogPhoto {
+  id        String         @id @db.Uuid
+  productId String         @db.Uuid
+  mediaId   String         @unique @db.Uuid
+  position  Int
+  createdAt DateTime       @default(now())
+  product   CatalogProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  media     MediaAsset     @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@index([productId, position])
+  @@map("catalog_photos")
+}
+
+model CatalogAuditEntry {
+  id         String           @id @db.Uuid
+  actorId    String           @db.Uuid
+  productId  String?          @db.Uuid
+  categoryId String?          @db.Uuid
+  action     String           @db.VarChar(40)
+  reason     String           @db.VarChar(500)
+  requestId  String           @db.Uuid
+  createdAt  DateTime         @default(now())
+  actor      User             @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  product    CatalogProduct?  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  category   CatalogCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([productId, createdAt, id])
+  @@index([categoryId, createdAt, id])
+  @@map("catalog_audit_entries")
+}
+
+model InventoryStock {
+  variantId String         @id @db.Uuid
+  onHand    Int            @default(0)
+  reserved  Int            @default(0)
+  version   Int            @default(1)
+  updatedAt DateTime
+  variant   CatalogVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@map("inventory_stock")
+}
+
+model InventoryHold {
+  orderId        String?             @db.Uuid
+  order          Order?              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id             String              @id @db.Uuid
+  variantId      String              @db.Uuid
+  organizationId String              @db.Uuid
+  referenceId    String              @db.Uuid
+  quantity       Int
+  status         String              @default("active") @db.VarChar(20)
+  expiresAt      DateTime
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime
+  variant        CatalogVariant      @relation(fields: [variantId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  movements      InventoryMovement[]
+
+  @@index([orderId], map: "inventory_holds_orderid_idx")
+  @@index([status, expiresAt, variantId])
+  @@index([variantId, status])
+  @@map("inventory_holds")
+}
+
+model InventoryMovement {
+  id             String         @id @db.Uuid
+  variantId      String         @db.Uuid
+  organizationId String         @db.Uuid
+  actorId        String?        @db.Uuid
+  holdId         String?        @db.Uuid
+  kind           String         @db.VarChar(20)
+  onHandDelta    Int
+  reservedDelta  Int
+  onHandAfter    Int
+  reservedAfter  Int
+  versionAfter   Int
+  idempotencyKey String         @db.VarChar(80)
+  fingerprint    String         @db.VarChar(1000)
+  reason         String         @db.VarChar(500)
+  requestId      String         @db.Uuid
+  createdAt      DateTime       @default(now())
+  variant        CatalogVariant @relation(fields: [variantId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  actor          User?          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  hold           InventoryHold? @relation(fields: [holdId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([variantId, createdAt, id])
+  @@map("inventory_movements")
+}
+
+model Cart {
+  id             String          @id @db.Uuid
+  userId         String          @unique @db.Uuid
+  organizationId String?         @db.Uuid
+  currency       String?         @db.Char(3)
+  items          Json
+  version        Int
+  createdAt      DateTime
+  updatedAt      DateTime
+  user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  quotes         CheckoutQuote[]
+
+  @@map("carts")
+}
+
+model CheckoutQuote {
+  id          String   @id @db.Uuid
+  buyerId     String   @db.Uuid
+  cartId      String   @db.Uuid
+  cartVersion Int
+  snapshot    Json
+  expiresAt   DateTime
+  createdAt   DateTime
+  buyer       User     @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Restrict)
+  order       Order?
+
+  @@index([buyerId, createdAt, id])
+  @@index([expiresAt])
+  @@map("checkout_quotes")
+}
+
+model Order {
+  payments       PaymentAttempt[]
+  id             String            @id @db.Uuid
+  buyerId        String            @db.Uuid
+  organizationId String            @db.Uuid
+  quoteId        String            @unique @db.Uuid
+  idempotencyKey String            @db.Uuid
+  fingerprint    String            @db.VarChar(1000)
+  status         String            @db.VarChar(30)
+  version        Int
+  snapshot       Json
+  totalMinor     BigInt
+  currency       String            @db.Char(3)
+  paymentId      String?           @unique @db.Uuid
+  expiresAt      DateTime
+  paidAt         DateTime?
+  createdAt      DateTime
+  updatedAt      DateTime
+  buyer          User              @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  quote          CheckoutQuote     @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  holds          InventoryHold[]
+  audits         OrderAuditEntry[]
+
+  @@unique([buyerId, idempotencyKey])
+  @@index([buyerId, createdAt, id])
+  @@index([organizationId, status, createdAt, id])
+  @@index([status, expiresAt, id])
+  @@map("orders")
+}
+
+model OrderPolicy {
+  organizationId String       @id @db.Uuid
+  data           Json
+  version        Int
+  updatedAt      DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@map("order_policies")
+}
+
+model OrderAuditEntry {
+  version   Int
+  id        String   @id @db.Uuid
+  orderId   String   @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String   @db.VarChar(30)
+  reason    String   @db.VarChar(500)
+  requestId String   @db.Uuid
+  createdAt DateTime
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, version], map: "order_audit_revision_unique")
+  @@index([orderId, createdAt, id])
+  @@map("order_audit_entries")
+}
+
+model OrderPolicyAuditEntry {
+  snapshot       Json
+  id             String       @id @db.Uuid
+  organizationId String       @db.Uuid
+  actorId        String       @db.Uuid
+  version        Int
+  reason         String       @db.VarChar(500)
+  requestId      String       @db.Uuid
+  createdAt      DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  actor          User         @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, version])
+  @@index([organizationId, createdAt, id])
+  @@map("order_policy_audit_entries")
+}
+
+model PaymentAttempt {
+  id                 String                 @id @db.Uuid
+  orderId            String                 @db.Uuid
+  buyerId            String                 @db.Uuid
+  organizationId     String                 @db.Uuid
+  idempotencyKey     String                 @db.Uuid
+  provider           String                 @db.VarChar(30)
+  reference          String?                @db.VarChar(200)
+  checkoutUrl        String?                @db.VarChar(2000)
+  status             String                 @db.VarChar(30)
+  distributionStatus String                 @db.VarChar(20)
+  allocation         Json
+  amountMinor        BigInt
+  currency           String                 @db.Char(3)
+  feeMinor           BigInt?
+  version            Int
+  expiresAt          DateTime
+  createdAt          DateTime
+  updatedAt          DateTime
+  order              Order                  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  buyer              User                   @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  events             PaymentProviderEvent[]
+  ledger             PaymentLedgerEntry[]
+  audits             PaymentAuditEntry[]
+  jobs               PaymentOutboxJob[]
+
+  @@unique([buyerId, idempotencyKey])
+  @@unique([provider, reference])
+  @@index([buyerId, createdAt, id])
+  @@index([organizationId, status, createdAt, id])
+  @@index([orderId, status])
+  @@map("payment_attempts")
+}
+
+model PaymentProviderEvent {
+  id          String               @id @db.Uuid
+  paymentId   String               @db.Uuid
+  provider    String               @db.VarChar(30)
+  eventId     String               @db.VarChar(200)
+  fingerprint String               @db.Char(64)
+  observation Json
+  outcome     String               @db.VarChar(30)
+  createdAt   DateTime
+  payment     PaymentAttempt       @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  ledger      PaymentLedgerEntry[]
+
+  @@unique([provider, eventId])
+  @@index([paymentId, createdAt, id])
+  @@map("payment_provider_events")
+}
+
+model PaymentLedgerEntry {
+  id            String               @id @db.Uuid
+  paymentId     String               @db.Uuid
+  eventId       String               @db.Uuid
+  kind          String               @db.VarChar(20)
+  amountMinor   BigInt
+  platformMinor BigInt
+  sellerMinor   BigInt
+  createdAt     DateTime
+  payment       PaymentAttempt       @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  event         PaymentProviderEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, kind])
+  @@map("payment_ledger_entries")
+}
+
+model PaymentAuditEntry {
+  id        String         @id @db.Uuid
+  paymentId String         @db.Uuid
+  version   Int
+  action    String         @db.VarChar(40)
+  actorId   String?        @db.Uuid
+  requestId String         @db.Uuid
+  createdAt DateTime
+  payment   PaymentAttempt @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  actor     User?          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, createdAt, id])
+  @@map("payment_audit_entries")
+}
+
+model PaymentOutboxJob {
+  id         String         @id @db.Uuid
+  paymentId  String         @db.Uuid
+  kind       String         @db.VarChar(20)
+  status     String         @db.VarChar(20)
+  attempts   Int
+  nextAt     DateTime
+  leaseId    String?        @db.Uuid
+  leaseUntil DateTime?
+  lastError  String?        @db.VarChar(80)
+  createdAt  DateTime
+  updatedAt  DateTime
+  payment    PaymentAttempt @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, kind])
+  @@index([status, nextAt, id])
+  @@map("payment_outbox_jobs")
+}
+
+model ServiceRecord {
+  id             String          @id @db.Uuid
+  organizationId String          @db.Uuid
+  name           String          @db.VarChar(150)
+  category       String          @db.VarChar(20)
+  kind           String          @db.VarChar(20)
+  status         String          @db.VarChar(20)
+  version        Int
+  snapshot       Json
+  createdAt      DateTime
+  updatedAt      DateTime
+  bookings       BookingRecord[]
+
+  @@unique([id, organizationId])
+  @@index([status, category, kind, createdAt, id])
+  @@index([organizationId, status, createdAt, id])
+  @@map("services")
+}
+
+model ServiceResource {
+  id             String          @id @db.Uuid
+  organizationId String          @db.Uuid
+  kind           String          @db.VarChar(20)
+  capacity       Int
+  status         String          @db.VarChar(20)
+  version        Int
+  snapshot       Json
+  createdAt      DateTime
+  updatedAt      DateTime
+  blocks         ServiceBlock[]
+  bookings       BookingRecord[]
+
+  @@unique([id, organizationId])
+  @@index([organizationId, status, id])
+  @@map("service_resources")
+}
+
+model ServiceBlock {
+  id             String          @id @db.Uuid
+  resourceId     String          @db.Uuid
+  organizationId String          @db.Uuid
+  startsAt       DateTime
+  endsAt         DateTime
+  reason         String          @db.VarChar(500)
+  createdBy      String          @db.Uuid
+  createdAt      DateTime
+  releasedAt     DateTime?
+  resource       ServiceResource @relation(fields: [resourceId, organizationId], references: [id, organizationId], onDelete: Restrict)
+
+  @@index([resourceId, releasedAt, startsAt, endsAt])
+  @@map("service_blocks")
+}
+
+model ServiceAuditEntry {
+  id             String   @id @db.Uuid
+  organizationId String   @db.Uuid
+  serviceId      String?  @db.Uuid
+  resourceId     String?  @db.Uuid
+  actorId        String   @db.Uuid
+  action         String   @db.VarChar(40)
+  version        Int
+  snapshot       Json
+  reason         String   @db.VarChar(500)
+  requestId      String   @db.VarChar(100)
+  createdAt      DateTime
+
+  @@index([serviceId, createdAt, id])
+  @@index([resourceId, createdAt, id])
+  @@map("service_audit")
+}
+
+model BookingRecord {
+  id               String          @id @db.Uuid
+  organizationId   String          @db.Uuid
+  serviceId        String          @db.Uuid
+  resourceId       String          @db.Uuid
+  animalId         String          @db.Uuid
+  buyerId          String          @db.Uuid
+  idempotencyKey   String          @db.Uuid
+  fingerprint      String          @db.VarChar(64)
+  status           String          @db.VarChar(20)
+  version          Int
+  startsAt         DateTime
+  endsAt           DateTime
+  occupiedStartsAt DateTime
+  occupiedEndsAt   DateTime
+  expiresAt        DateTime?
+  snapshot         Json
+  createdAt        DateTime
+  updatedAt        DateTime
+  service          ServiceRecord   @relation(fields: [serviceId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  resource         ServiceResource @relation(fields: [resourceId, organizationId], references: [id, organizationId], onDelete: Restrict)
+
+  @@unique([buyerId, idempotencyKey])
+  @@index([resourceId, status, occupiedStartsAt, occupiedEndsAt])
+  @@index([animalId, status, occupiedStartsAt, occupiedEndsAt])
+  @@index([status, expiresAt, id])
+  @@index([buyerId, createdAt, id])
+  @@index([organizationId, createdAt, id])
+  @@map("bookings")
+}
+
+model BookingAuditEntry {
+  id        String   @id @db.Uuid
+  bookingId String   @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String   @db.VarChar(40)
+  version   Int
+  snapshot  Json
+  reason    String   @db.VarChar(500)
+  requestId String   @db.VarChar(100)
+  createdAt DateTime
+
+  @@unique([bookingId, version])
+  @@index([bookingId, createdAt, id])
+  @@map("booking_audit")
+}
+
+model InboxNotification {
+  id             String          @id @db.Uuid
+  userId         String          @db.Uuid
+  eventKey       String          @db.VarChar(120)
+  category       String          @db.VarChar(20)
+  eventType      String          @db.VarChar(60)
+  subjectType    String          @db.VarChar(30)
+  subjectId      String          @db.Uuid
+  subjectVersion Int
+  status         String          @db.VarChar(30)
+  title          String          @db.VarChar(150)
+  body           String          @db.VarChar(2000)
+  details        Json
+  createdAt      DateTime
+  readAt         DateTime?
+  deliveries     OutboxMessage[]
+
+  @@unique([userId, eventKey])
+  @@index([userId, createdAt, id])
+  @@index([userId, readAt, createdAt, id])
+  @@map("notification_inbox")
+}
+
+model NotificationPreference {
+  userId         String   @id @db.Uuid
+  ordersEmail    Boolean  @default(true)
+  adoptionsEmail Boolean  @default(true)
+  bookingsEmail  Boolean  @default(true)
+  version        Int
+  updatedAt      DateTime
+
+  @@map("notification_preferences")
+}
+
+model NotificationRetryAudit {
+  id             String   @id @db.Uuid
+  failedOutboxId String   @unique @db.Uuid
+  newOutboxId    String   @unique @db.Uuid
+  actorId        String   @db.Uuid
+  reason         String   @db.VarChar(500)
+  createdAt      DateTime
+
+  @@map("notification_retry_audit")
+}
+
+model VeterinaryCredential {
+  id                 String    @id @db.Uuid
+  organizationId     String    @db.Uuid
+  professionalId     String    @db.Uuid
+  resourceId         String    @unique @db.Uuid
+  profession         String    @db.VarChar(40)
+  registrationNumber String    @db.VarChar(15)
+  status             String    @db.VarChar(20)
+  version            Int
+  verifiedUntil      DateTime?
+  snapshot           Json
+  createdAt          DateTime
+  updatedAt          DateTime
+
+  @@unique([profession, registrationNumber])
+  @@index([organizationId, status, createdAt, id])
+  @@index([status, verifiedUntil, id])
+  @@map("veterinary_credentials")
+}
+
+model VeterinaryCredentialAudit {
+  id           String   @id @db.Uuid
+  credentialId String   @db.Uuid
+  actorId      String   @db.Uuid
+  action       String   @db.VarChar(40)
+  version      Int
+  snapshot     Json
+  reason       String   @db.VarChar(500)
+  requestId    String   @db.VarChar(100)
+  createdAt    DateTime
+
+  @@unique([credentialId, version])
+  @@map("veterinary_credential_audit")
+}

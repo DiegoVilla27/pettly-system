@@ -1,0 +1,123 @@
+@if (actions().length) {
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <fieldset [disabled]="busy() || blocked()">
+      <legend class="text-lg font-semibold">Acciones del producto</legend>
+      <label for="product-action" class="mt-4 mb-2 block text-sm font-semibold"
+        >Acción del producto</label
+      ><select
+        id="product-action"
+        formControlName="action"
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+      >
+        @for (a of actions(); track a.value) {
+          <option [value]="a.value">{{ a.label }}</option>
+        }
+      </select>
+      @if (action() === 'submit') {
+        <p class="mt-3 text-sm text-muted">
+          Necesitas una categoría activa, al menos una variante activa y una
+          fotografía. Un revisor ajeno a la empresa debe aprobar el producto.
+        </p>
+      }
+      @if (action() === 'archive' || action() === 'variant-archive') {
+        <p
+          id="product-action-effects"
+          class="mt-3 rounded-xl bg-paper p-4 text-sm"
+        >
+          El archivo es definitivo. Conserva historial, referencias y
+          existencias; no elimina datos ni libera el SKU para otra variante.
+        </p>
+      } @else {
+        <p id="product-action-effects" class="mt-3 text-sm text-muted">
+          Pausar retira la publicación. Cambiar fotografías o variantes devuelve
+          el producto a borrador y exige nueva revisión.
+        </p>
+      }
+      @if (action() === 'upload') {
+        <label for="product-file" class="mt-4 mb-2 block text-sm font-semibold"
+          >Fotografía del producto *</label
+        ><input
+          id="product-file"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          (change)="choose($event)"
+          class="min-h-11 w-full rounded-xl border border-line p-3"
+        />
+        <p class="mt-2 text-xs text-muted">
+          Hasta 5 MiB. La API sanea la imagen y elimina metadatos.
+        </p>
+      }
+      @if (action() === 'remove') {
+        <label
+          for="product-photo-remove"
+          class="mt-4 mb-2 block text-sm font-semibold"
+          >Fotografía que se eliminará *</label
+        ><select
+          id="product-photo-remove"
+          formControlName="mediaId"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        >
+          <option value="">Selecciona una fotografía</option>
+          @for (p of detail().photos; track p.id) {
+            <option [value]="p.mediaId">Fotografía {{ p.position + 1 }}</option>
+          }
+        </select>
+      }
+      @if (action() === 'variant-archive') {
+        <label
+          for="product-variant-archive"
+          class="mt-4 mb-2 block text-sm font-semibold"
+          >Variante que se archivará *</label
+        ><select
+          id="product-variant-archive"
+          formControlName="variantId"
+          class="min-h-11 w-full rounded-xl border border-line bg-white px-3"
+        >
+          <option value="">Selecciona una variante</option>
+          @for (v of detail().variants; track v.id) {
+            @if (v.status === 'active') {
+              <option [value]="v.id">{{ v.sku }}</option>
+            }
+          }
+        </select>
+      }
+      <label
+        for="product-action-reason"
+        class="mt-4 mb-2 block text-sm font-semibold"
+        >Motivo de la acción *</label
+      ><textarea
+        id="product-action-reason"
+        formControlName="reason"
+        maxlength="500"
+        rows="2"
+        [attr.aria-invalid]="
+          form.controls.reason.invalid && form.controls.reason.touched
+        "
+        class="min-h-11 w-full rounded-xl border border-line bg-white px-3 py-3"
+      ></textarea>
+      <p class="mt-2 text-xs text-muted">
+        Entre 10 y 500 caracteres, sin información personal ni saltos de línea.
+      </p>
+      <label class="mt-4 flex min-h-11 items-center gap-3 text-sm"
+        ><input
+          type="checkbox"
+          formControlName="confirm"
+          aria-describedby="product-action-effects"
+          [attr.aria-invalid]="
+            form.controls.confirm.invalid && form.controls.confirm.touched
+          "
+          class="size-5 accent-primary"
+        />Confirmo la acción y sus efectos sobre el producto</label
+      >
+      @if (error()) {
+        <p role="alert" class="mt-3 text-sm text-danger">{{ error() }}</p>
+      }
+      <button
+        type="submit"
+        class="mt-5 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {{ busy() ? 'Registrando…' : 'Registrar acción del producto' }}
+      </button>
+    </fieldset>
+  </form>
+}
