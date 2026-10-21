@@ -45,7 +45,9 @@
     "api-client:generate": "nx build api && node scripts/export-openapi.mjs && node scripts/generate-api-client.mjs",
     "api-client:check": "nx build api && node scripts/export-openapi.mjs && node scripts/generate-api-client.mjs --check",
     "test:admin": "nx test admin",
-    "check:admin-architecture": "node scripts/check-admin-architecture.mjs"
+    "check:admin-architecture": "node scripts/check-admin-architecture.mjs",
+    "db:seed:demo": "node scripts/development/seed-demo.mjs",
+    "db:seed:check": "node --test scripts/development/seed-policy.test.mjs"
   },
   "private": true,
   "devDependencies": {

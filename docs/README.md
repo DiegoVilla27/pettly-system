@@ -26,6 +26,8 @@ Read [DESIGN.md](../DESIGN.md) before each task. It defines general architecture
 - [Bookings, accepted policies and reminders](bookings.md)
 - [Notifications: inbox, preferences, delivery and recovery](notifications.md)
 
+- [Seeds de pruebas manuales: credenciales, roles, datos y reset local](seeds.md)
+
 Operational guides: [Operations and recovery](operations.md), [development](development.md) and [CI](ci.md). Every new module must have its own document, updated with its code and the general design.
 
 - [Backoffice Services](backoffice-services.md): company service policies, publication review and history.
